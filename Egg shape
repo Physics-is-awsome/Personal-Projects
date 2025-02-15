@@ -1,0 +1,43 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.sparse import lil_matrix
+from scipy.sparse.linalg import spsolve
+
+#constants
+A=0.002 #cross sectional area of egg
+m=0.05#mass of egg
+d= 0.0003 #thickness of egg
+E= 3.2e10 #young's modulus
+p= 2.241e3 #density of egg
+v= 21.4 #velocity of egg, later update to account for diffrent heights
+# Initial conditions
+v = 0  # initial velocity in m/s
+x = 0  # initial position in meters
+t = 0  # initial time in seconds
+
+# Lists to store results for plotting
+time = []
+velocity = []
+position = []
+#equation
+#time
+v_s=np.sqrt(E/p) #speed of sound in egg
+t_imp=d/v_s #time of impact, later update to inlude dimensional factor
+#impact force
+import pyvista as pv
+
+
+# Create the geometry of an egg
+mesh = pv.ParametricEllipsoid(1.0, 0.7, 0.7)
+
+# Visualize the geometry
+mesh.plot()
+
+import meshio
+
+# Read the mesh file
+mesh = meshio.read("egg_mesh.msh")
+
+# Extract nodes and elements
+nodes = mesh.points
+elements = mesh.cells_dict["tetra"]
