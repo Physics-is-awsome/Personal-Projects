@@ -1,0 +1,89 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.sparse import lil_matrix
+from scipy.sparse.linalg import spsolve
+
+#constants
+g=9.81
+rho=1.225
+Cd=0.4
+A=0.002
+m=0.05
+h_0= input("Enter the initial height of the object in meters: ")
+x=float(h_0)
+dt=0.01
+T=np.sqrt((2*x)/g)
+c=0.5 #change c
+t=0
+v=0
+
+# Lists to store results for plotting
+time = []
+velocity = []
+position = []
+accelaration = []
+
+while t <= T:
+    # Append current values to lists
+    time.append(t)
+    velocity.append(v)
+    position.append(x)
+    
+    # Update velocity and position using Euler's method
+    # Calculate the drag force
+    F_d = 0.5 * c * rho * A * v**2
+    
+    # Calculate the net force
+    F_net = m * g - F_d
+    
+    # Calculate the acceleration
+    a = F_net / m
+    accelaration.append(a)
+    v = v + a * dt
+    x = x - v * dt
+    t = t + dt
+
+
+
+
+print("the final speed was:" ,v)
+#constants
+A=0.002 #cross sectional area of egg
+m=0.05#mass of egg
+d= 0.0003 #thickness of egg
+E= 3.2e10 #young's modulus
+p= 2.241e3 #density of egg
+v= v #velocity of egg, later update to account for diffrent heights
+
+
+#equation
+#time
+v_s=np.sqrt(E/p) #speed of sound in egg
+t_imp=d/v_s #time of impact, later update to inlude dimensional factor
+#impact force
+F_imp=(m*v)/t_imp
+
+if F_imp>=22:
+    print('egg breaks')
+else:
+    print('egg survives')
+    
+# Plot results
+plt.figure(figsize=(12, 6))
+
+plt.subplot(1, 2, 1)
+plt.plot(time, velocity, label='Velocity')
+plt.xlabel('Time (s)')
+plt.ylabel('Velocity (m/s)')
+plt.title('Velocity vs Time')
+plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.plot(time, position, label='Position', color='orange')
+plt.xlabel('Time (s)')
+plt.ylabel('Position (m)')
+plt.title('Position vs Time')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
