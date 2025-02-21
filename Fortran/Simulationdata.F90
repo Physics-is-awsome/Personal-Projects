@@ -46,6 +46,7 @@ module Simulation_data
 
   real, save    :: sim_nsubinv, sim_a3, sim_a1inv, sim_a3inv
   real, save    :: sim_Omega2, sim_Pconst
+  integer, save :: sim_meshMe
 
 
 end module Simulation_data
