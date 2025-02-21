@@ -1,24 +1,4 @@
-!!
-!!
-!! NAME
-!!
-!!  Simulation_data for Plasma Beam 
-!!
-!! SYNOPSIS
-!!
-!!  use Simulation_data 
-!!
-!!  DESCRIPTION
-!!
-!!  Stores the local data for Simulation setup: Sedov
-!!  
-!! PARAMETERS
-!!
-!!  sim_pAmbient       Initial ambient pressure
-!!  sim_rhoAmbient     Initial ambient density
-
-!!***
-
+! simulation Data for PBP simulation !
 module Simulation_data
 
   implicit none
@@ -50,11 +30,9 @@ module Simulation_data
   logical, save :: sim_plotScaledPressures
 
   real, save :: sim_holeRad,sim_shelltempfac
+  ! for planet !
 
   logical, save :: sim_staticGpot, sim_shellcond,sim_paircond
-  ! !for planet
-!! *** Runtime Parameters *** !!
-  
   real, save    :: sim_eccentricity
   real, save    :: sim_gamma, sim_density, sim_Omega1, sim_a1
   real, save    :: sim_xctr, sim_yctr, sim_zctr
@@ -70,5 +48,4 @@ module Simulation_data
   real, save    :: sim_Omega2, sim_Pconst
 
 
-  integer, save :: sim_meshMe
 end module Simulation_data
