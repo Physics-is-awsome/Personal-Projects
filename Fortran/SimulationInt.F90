@@ -47,7 +47,7 @@ subroutine Simulation_init()
   implicit none
 
 #include "constants.h"
-#include "Flash.h"
+
 
   integer :: i
   integer :: geom
