@@ -1,0 +1,143 @@
+!============================================================
+! Magnetohydrodynamics (MHD) Solver using Finite Difference Method
+!============================================================
+
+module mhd_module
+    implicit none
+    contains
+
+    !============================================================
+    ! Subroutine: Initialize the velocity, magnetic field, and pressure fields
+    !============================================================
+    subroutine initialize_fields(u, v, Bx, By, p)
+        real(kind=8), intent(out) :: u(:,:), v(:,:), Bx(:,:), By(:,:), p(:,:)
+        integer :: i, j
+
+        do i = 1, size(u, 1)
+            do j = 1, size(u, 2)
+                u(i, j) = 0.0                    ! Initialize velocity components to zero
+                v(i, j) = 0.0
+                Bx(i, j) = 0.1 * sin(2.0 * 3.14159 * j / size(u, 2))  ! Magnetic field (x-component)
+                By(i, j) = 0.1 * cos(2.0 * 3.14159 * i / size(u, 1))  ! Magnetic field (y-component)
+                p(i, j) = 0.0                    ! Initialize pressure to zero
+            end do
+        end do
+    end subroutine initialize_fields
+
+    !============================================================
+    ! Subroutine: Compute the current density (J = curl(B))
+    !============================================================
+    subroutine compute_current(Bx, By, Jx, Jy, dx, dy)
+        real(kind=8), intent(in) :: Bx(:,:), By(:,:), dx, dy
+        real(kind=8), intent(out) :: Jx(:,:), Jy(:,:)
+        integer :: i, j
+
+        do i = 2, size(Bx, 1) - 1
+            do j = 2, size(Bx, 2) - 1
+                Jx(i, j) = (By(i, j+1) - By(i, j-1)) / (2.0 * dy)     ! Compute Jx
+                Jy(i, j) = -(Bx(i+1, j) - Bx(i-1, j)) / (2.0 * dx)    ! Compute Jy
+            end do
+        end do
+    end subroutine compute_current
+
+    !============================================================
+    ! Subroutine: Update velocity field using the Navier-Stokes equation
+    !============================================================
+    subroutine update_velocity(u, v, Jx, Jy, Bx, By, p, u_new, v_new, dx, dy, dt, Re)
+        real(kind=8), intent(in) :: u(:,:), v(:,:), Jx(:,:), Jy(:,:), Bx(:,:), By(:,:), p(:,:)
+        real(kind=8), intent(out) :: u_new(:,:), v_new(:,:)
+        real(kind=8), intent(in) :: dx, dy, dt, Re
+        integer :: i, j
+
+        do i = 2, size(u, 1) - 1
+            do j = 2, size(u, 2) - 1
+                u_new(i, j) = u(i, j) + dt * ( &
+                    -(u(i, j) * (u(i+1, j) - u(i-1, j)) / (2.0 * dx) + &
+                      v(i, j) * (u(i, j+1) - u(i, j-1)) / (2.0 * dy)) + &
+                    (1.0 / Re) * ((u(i+1, j) - 2.0 * u(i, j) + u(i-1, j)) / dx**2 + &
+                                  (u(i, j+1) - 2.0 * u(i, j) + u(i, j-1)) / dy**2) + &
+                    (Jx(i, j) * By(i, j) - Jy(i, j) * Bx(i, j)) )
+                v_new(i, j) = v(i, j) + dt * ( &
+                    -(u(i, j) * (v(i+1, j) - v(i-1, j)) / (2.0 * dx) + &
+                      v(i, j) * (v(i, j+1) - v(i, j-1)) / (2.0 * dy)) + &
+                    (1.0 / Re) * ((v(i+1, j) - 2.0 * v(i, j) + v(i-1, j)) / dx**2 + &
+                                  (v(i, j+1) - 2.0 * v(i, j) + v(i, j-1)) / dy**2) + &
+                    (Jx(i, j) * Bx(i, j) - Jy(i, j) * By(i, j)) )
+            end do
+        end do
+    end subroutine update_velocity
+
+    !============================================================
+    ! Subroutine: Update the magnetic field using the induction equation
+    !============================================================
+    subroutine update_magnetic_field(Bx, By, u, v, Bx_new, By_new, dx, dy, dt, Rm)
+        real(kind=8), intent(in) :: Bx(:,:), By(:,:), u(:,:), v(:,:), dx, dy, dt, Rm
+        real(kind=8), intent(out) :: Bx_new(:,:), By_new(:,:)
+        integer :: i, j
+
+        do i = 2, size(Bx, 1) - 1
+            do j = 2, size(Bx, 2) - 1
+                Bx_new(i, j) = Bx(i, j) + dt * ( &
+                    -(u(i, j) * (Bx(i+1, j) - Bx(i-1, j)) / (2.0 * dx)) + &
+                    (1.0 / Rm) * ((Bx(i+1, j) - 2.0 * Bx(i, j) + Bx(i-1, j)) / dx**2 + &
+                                  (Bx(i, j+1) - 2.0 * Bx(i, j) + Bx(i, j-1)) / dy**2) )
+                By_new(i, j) = By(i, j) + dt * ( &
+                    -(v(i, j) * (By(i, j+1) - By(i, j-1)) / (2.0 * dy)) + &
+                    (1.0 / Rm) * ((By(i+1, j) - 2.0 * By(i, j) + By(i-1, j)) / dx**2 + &
+                                  (By(i, j+1) - 2.0 * By(i, j) + By(i, j-1)) / dy**2) )
+            end do
+        end do
+    end subroutine update_magnetic_field
+
+    !============================================================
+    ! Subroutine: Enforce incompressibility (pressure correction)
+    !============================================================
+    subroutine enforce_incompressibility(u, v, p, dx, dy, dt)
+        real(kind=8), intent(inout) :: u(:,:), v(:,:), p(:,:)
+        real(kind=8), intent(in) :: dx, dy, dt
+        real(kind=8), allocatable :: divergence(:,:), dpdx(:,:), dpdy(:,:)
+        integer :: i, j, iter, max_iter
+        real(kind=8), parameter :: tolerance = 1.0e-6
+
+        allocate(divergence(size(u, 1), size(u, 2)))
+        allocate(dpdx(size(u, 1), size(u, 2)))
+        allocate(dpdy(size(u, 1), size(u, 2)))
+
+        max_iter = 100
+        do iter = 1, max_iter
+            do i = 2, size(u, 1) - 1
+                do j = 2, size(u, 2) - 1
+                    divergence(i, j) = ((u(i+1, j) - u(i-1, j)) / (2.0 * dx)) + &
+                                       ((v(i, j+1) - v(i, j-1)) / (2.0 * dy))
+                end do
+            end do
+
+            if (maxval(abs(divergence)) < tolerance) exit
+
+            do i = 2, size(p, 1) - 1
+                do j = 2, size(p, 2) - 1
+                    p(i, j) = (1.0 / 4.0) * (p(i+1, j) + p(i-1, j) + p(i, j+1) + p(i, j-1) - divergence(i, j) * dx * dy)
+                end do
+            end do
+
+            do i = 2, size(p, 1) - 1
+                do j = 2, size(p, 2) - 1
+                    dpdx(i, j) = (p(i+1, j) - p(i-1, j)) / (2.0 * dx)
+                    dpdy(i, j) = (p(i, j+1) - p(i, j-1)) /  (2.0 * dy)
+                end do
+            end do
+
+            ! Correct velocity field
+            do i = 2, size(u, 1) - 1
+                do j = 2, size(u, 2) - 1
+                    u(i, j) = u(i, j) - dpdx(i, j) * dt
+                    v(i, j) = v(i, j) - dpdy(i, j) * dt
+                end do
+            end do
+        end do
+
+        ! Deallocate temporary arrays
+        deallocate(divergence, dpdx, dpdy)
+    end subroutine enforce_incompressibility
+
+end module mhd_module
