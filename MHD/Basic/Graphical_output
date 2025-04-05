@@ -1,0 +1,31 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Load simulation data
+data = np.loadtxt("mhd_results.txt")
+Nx, Ny = 50, 50  # Define grid size
+u = data[:, 2].reshape(Nx, Ny)
+v = data[:, 3].reshape(Nx, Ny)
+Bx = data[:, 4].reshape(Nx, Ny)
+By = data[:, 5].reshape(Nx, Ny)
+
+# Create a grid
+x = np.arange(Nx)
+y = np.arange(Ny)
+X, Y = np.meshgrid(x, y)
+
+# Visualize velocity field as a quiver plot
+plt.figure(figsize=(8, 6))
+plt.quiver(X, Y, u, v, scale=1, color="blue")
+plt.title("Velocity Field")
+plt.xlabel("X")
+plt.ylabel("Y")
+plt.show()
+
+# Visualize magnetic field as a quiver plot
+plt.figure(figsize=(8, 6))
+plt.quiver(X, Y, Bx, By, scale=1, color="red")
+plt.title("Magnetic Field")
+plt.xlabel("X")
+plt.ylabel("Y")
+plt.show()
