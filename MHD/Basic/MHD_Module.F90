@@ -74,6 +74,52 @@ module mhd_module
                     (Jz(i,j) * Bx(i,j) ))
             end do
         end do
+                ! Initialize pressure correction (phi) to zero
+        phi = 0.0
+
+        ! Solve Pressure Poisson Equation using SOR
+        DO iter = 1, max_iter
+            REAL :: old_phi(nx, ny), residual
+            old_phi = phi
+
+            DO j = 2, ny-1  ! Avoid boundaries
+                DO i = 2, nx-1
+                    REAL :: rhs
+                    ! Calculate the right-hand side of the Poisson equation
+                    rhs = (rho / dt) * ((u_new(i+1, j) - u_new(i-1, j)) / (2.0 * dx) + &
+                               (v_new(i, j+1) - v_new(i, j-1)) / (2.0 * dy))
+                    ! SOR update (using relaxation parameter omega)
+                    phi(i, j) = (1.0 - omega) * phi(i, j) + &
+                            (omega / (2.0 * (1.0/dx2 + 1.0/dy2))) * &
+                            ((phi(i+1, j) + phi(i-1, j)) / dx2 + (phi(i, j+1) + phi(i, j-1)) / dy2 - rhs)
+                END DO
+            END DO
+
+            ! Check convergence
+            residual = MAXVAL(ABS(phi - old_phi))
+            IF (residual < tolerance) EXIT
+        END DO
+
+        ! Correct velocities and update pressure
+        DO j = 2, ny-1
+            DO i = 2, nx-1
+                ! Correct velocities to enforce incompressibility
+                u(i, j) = u_new(i, j) - (dt / rho) * (phi(i+1, j) - phi(i-1, j)) / (2.0 * dx)
+                v(i, j) = v_new(i, j) - (dt / rho) * (phi(i, j+1) - phi(i, j-1)) / (2.0 * dy)
+
+                ! Update pressure (optional, if tracking pressure)
+                p(i, j) = p(i, j) + phi(i, j)
+            END DO
+        END DO
+
+        ! Optional: Check divergence to ensure incompressibility (for debugging)
+        DO j = 2, ny-1
+            DO i = 2, nx-1
+                REAL :: div
+                div = ((u(i+1, j) - u(i-1, j)) / (2.0 * dx) + (v(i, j+1) - v(i, j-1)) / (2.0 * dy))
+                IF (ABS(div) > 1.0E-4) PRINT *, "Warning: Non-zero divergence at", i, j, div
+            END DO
+        END DO
     end subroutine update_velocity
 
 
