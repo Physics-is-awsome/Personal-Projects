@@ -1,10 +1,11 @@
-
 !============================================================
 ! Main Program: MHD Solver
 !============================================================
 program mhd_solver
     use mhd_module
+    use hdf5
     implicit none
+
 
     ! Parameters
     integer, parameter :: Nx = 50, Ny = 50           ! Grid dimensions
@@ -26,10 +27,19 @@ program mhd_solver
 
     integer :: n                                      ! Time step counter
 
+    ! HDF5 variables
+    integer(hid_t) :: file_id, dset_id, dataspace_id
+    integer :: error
+    integer(hsize_t), dimension(2) :: dims = (/Nx, Ny/)
+
     !============================================================
     ! Initialize fields
     !============================================================
     call initialize_fields(u, v, Bx, By, p)
+
+    ! Initialize HDF5 library
+    call h5open_f(error)
+    if (error /= 0) stop "Failed to initialize HDF5 library"
 
     !============================================================
     ! Time-stepping loop
@@ -59,6 +69,29 @@ program mhd_solver
         end if
     end do
 
+    ! Final output
+    print *, "Simulation complete!"
+
+
+    ! Write v to HDF5 file
+    call h5fcreate_f("velocity_v.h5", H5F_ACC_TRUNC_F, file_id, error)
+    if (error /= 0) stop "Failed to create HDF5 file"
+
+    call h5screate_simple_f(2, dims, dataspace_id, error)
+    if (error /= 0) stop "Failed to create dataspace"
+
+    call h5dcreate_f(file_id, "velocity_v", H5T_NATIVE_DOUBLE, dataspace_id, dset_id, error)
+    if (error /= 0) stop "Failed to create dataset"
+
+    call h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, v, dims, error)
+    if (error /= 0) stop "Failed to write to dataset"
+
+    call h5dclose_f(dset_id, error)
+    call h5sclose_f(dataspace_id, error)
+    call h5fclose_f(file_id, error)
+    call h5close_f(error)
+
+end program mhd_solver
     ! Final output
     print *, "Simulation complete!"
 
