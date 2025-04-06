@@ -22,9 +22,7 @@ module mhd_module
             if (index(line, 'Bx_value') /= 0) read(line, '("B_value =", F8.2)') Bx
             if (index(line, 'By_value') /= 0) read(line, '("By_value =", F8.2)') By
             if (index(line, 'p_value') /= 0) read(line, '("p_value =", F8.2)') p
-            if (index(line, 'dx_value') /= 0) read(line, '("dx_value =", F8.2)') dx
-            if (index(line, 'dy_value') /= 0) read(line, '("dy_value =", F8.2)') dy
-            if (index(line, 'dt_value') /= 0) read(line, '("dt_value =", F8.2)') dt
+
         end do
 
         close(unit)
@@ -33,22 +31,20 @@ module mhd_module
     !============================================================
     ! Subroutine: Initialize the velocity, magnetic field, and pressure fields
     !============================================================
-    subroutine initialize_fields(u, v, Bx, By, p, dx, dy, dt)
-        real(kind=8), intent(out) :: u(:,:), v(:,:), Bx(:,:), By(:,:), p(:,:), dx, dy, dt
-        real(kind=8) :: u_value, v_value, Bx_value, By_value, p_value, dx_value, dy_value, dt_value
+    subroutine initialize_fields(u, v, Bx, By, p)
+        real(kind=8), intent(out) :: u(:,:), v(:,:), Bx(:,:), By(:,:), p(:,:)
+        real(kind=8) :: u_value, v_value, Bx_value, By_value, p_value, 
         integer :: i, j
 
-        call read_config(u_value, v_value, Bx_value, By_value, p_value, dx_value, dy_value, dt_value)
-        dx = dx_value
-        dy = dy_value
-        dt = dt_value
+        call read_config(u_value, v_value, Bx_value, By_value, p_value)
+
 
         do i = 1, size(u, 1)
             do j = 1, size(u, 2)
                 u(i, j) = u_value
                 v(i, j) = v_value
-                Bx(i, j) = Bx_value * sin(2.0 * 3.14159 * j / size(u, 2))
-                By(i, j) = By_value * cos(2.0 * 3.14159 * i / size(u, 1))
+                Bx(i, j) = Bx_value 
+                By(i, j) = By_value 
                 p(i, j) = p_value
             end do
         end do
