@@ -1,1 +1,11 @@
+! Values of things
+u(i, j) = 0.0                    ! Initialize velocity components to zero
+v(i, j) = 0.0
+Bx(i, j) = 0.1 * sin(2.0 * 3.14159 * j / size(u, 2))  ! Magnetic field (x-component)
+By(i, j) = 0.1 * cos(2.0 * 3.14159 * i / size(u, 1))  ! Magnetic field (y-component)
+p(i, j) = 0.0   
 
+! Values for simulation
+dx = 0.2
+dy = 0.2
+dt = 1
