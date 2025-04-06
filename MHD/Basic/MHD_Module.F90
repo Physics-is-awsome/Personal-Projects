@@ -19,7 +19,7 @@ module mhd_module
             read(unit, '(A)') line
             if (index(line, 'u_value') /= 0) read(line, '("u_value =", F8.2)') u
             if (index(line, 'v_value') /= 0) read(line, '("v_value =", F8.2)') v
-            if (index(line, 'Bx_value') /= 0) read(line, '("B_value =", F8.2)') Bx
+            if (index(line, 'Bx_value') /= 0) read(line, '("Bx_value =", F8.2)') Bx
             if (index(line, 'By_value') /= 0) read(line, '("By_value =", F8.2)') By
             if (index(line, 'p_value') /= 0) read(line, '("p_value =", F8.2)') p
 
@@ -33,7 +33,7 @@ module mhd_module
     !============================================================
     subroutine initialize_fields(u, v, Bx, By, p)
         real(kind=8), intent(out) :: u(:,:), v(:,:), Bx(:,:), By(:,:), p(:,:)
-        real(kind=8) :: u_value, v_value, Bx_value, By_value, p_value, 
+        real(kind=8) :: u_value, v_value, Bx_value, By_value, p_value 
         integer :: i, j
 
         call read_config(u_value, v_value, Bx_value, By_value, p_value)
