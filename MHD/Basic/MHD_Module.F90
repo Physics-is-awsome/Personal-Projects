@@ -8,8 +8,8 @@ module mhd_module
     ! ======================
     ! Read Config file!
     ! ===============
-    subroutine read_config(u, v, Bx, By, p, dx, dy, dt)
-        real(kind=8), intent(out) :: u, v, Bx, By, p, dx, dy, dt
+    subroutine read_config(u, v, Bx, By, p)
+        real(kind=8), intent(out) :: u, v, Bx, By, p
         character(len=256) :: line
         integer :: unit
 
