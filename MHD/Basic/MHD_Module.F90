@@ -56,6 +56,9 @@ module mhd_module
         real(kind=8), intent(in) :: u(:,:), v(:,:), Jz(:,:), Bx(:,:), By(:,:), p(:,:)
         real(kind=8), intent(out) :: u_new(:,:), v_new(:,:)
         real(kind=8), intent(in) :: dx, dy, dt, Re
+        REAL :: old_phi(nx, ny), residual
+        REAL :: rhs
+        REAL :: div
         integer :: i, j
 
         do i = 2, size(u, 1) - 1
@@ -79,12 +82,12 @@ module mhd_module
 
         ! Solve Pressure Poisson Equation using SOR
         DO iter = 1, max_iter
-            REAL :: old_phi(nx, ny), residual
+            
             old_phi = phi
 
             DO j = 2, ny-1  ! Avoid boundaries
                 DO i = 2, nx-1
-                    REAL :: rhs
+                    
                     ! Calculate the right-hand side of the Poisson equation
                     rhs = (rho / dt) * ((u_new(i+1, j) - u_new(i-1, j)) / (2.0 * dx) + &
                                (v_new(i, j+1) - v_new(i, j-1)) / (2.0 * dy))
@@ -115,7 +118,7 @@ module mhd_module
         ! Optional: Check divergence to ensure incompressibility (for debugging)
         DO j = 2, ny-1
             DO i = 2, nx-1
-                REAL :: div
+                
                 div = ((u(i+1, j) - u(i-1, j)) / (2.0 * dx) + (v(i, j+1) - v(i, j-1)) / (2.0 * dy))
                 IF (ABS(div) > 1.0E-4) PRINT *, "Warning: Non-zero divergence at", i, j, div
             END DO
