@@ -27,30 +27,33 @@ module mhd_module
     !============================================================
     ! Subroutine: Compute the current density (J = curl(B))
     !============================================================
-    subroutine compute_current(Bx, By, Jx, Jy, dx, dy)
-        real(kind=8), intent(in) :: Bx(:,:), By(:,:), dx, dy
-        real(kind=8), intent(out) :: Jx(:,:), Jy(:,:)
-        integer :: i, j
-        REAL :: Mu_in
-        Mu_in= 7.9577D+5
+    subroutine compute_current(Bx, By, Jz, dx, dy)
 
+        real(kind=8), intent(in) :: Bx(:,:), By(:,:), dx, dy
+        real(kind=8), intent(out) :: Jz(:,:)
+        REAL :: Mu_in
+        integer :: i, j
+        Mu_in= 7.9577D+5
+        
 
 
 
         ! Calculate current density Jz using finite differences
-        DO j = 2, ny-1
-            DO i = 2, nx-1
+        do i = 2, size(Bx, 1) - 1
+             do j = 2, size(Bx, 2) - 1
                 Jz(i, j) = ( (By(i+1, j) - By(i-1, j)) / (2.0 * dx) - &
                             (Bx(i, j+1) - Bx(i, j-1)) / (2.0 * dy) ) / Mu_in
             END DO
         END DO
     end subroutine compute_current
 
+
+
     !============================================================
     ! Subroutine: Update velocity field using the Navier-Stokes equation
     !============================================================
-    subroutine update_velocity(u, v, Jx, Jy, Bx, By, p, u_new, v_new, dx, dy, dt, Re)
-        real(kind=8), intent(in) :: u(:,:), v(:,:), Jx(:,:), Jy(:,:), Bx(:,:), By(:,:), p(:,:)
+    subroutine update_velocity(u, v, Jz, Bx, By, p, u_new, v_new, dx, dy, dt, Re)
+        real(kind=8), intent(in) :: u(:,:), v(:,:), Jz(:,:), Bx(:,:), By(:,:), p(:,:)
         real(kind=8), intent(out) :: u_new(:,:), v_new(:,:)
         real(kind=8), intent(in) :: dx, dy, dt, Re
         integer :: i, j
@@ -62,16 +65,17 @@ module mhd_module
                       v(i, j) * (u(i, j+1) - u(i, j-1)) / (2.0 * dy)) + &
                     (1.0 / Re) * ((u(i+1, j) - 2.0 * u(i, j) + u(i-1, j)) / dx**2 + &
                                   (u(i, j+1) - 2.0 * u(i, j) + u(i, j-1)) / dy**2) + &
-                    (Jz(i, j) * By(i, j)) )
+                    (Jz(i,j) * Bx(i,j) ))
                 v_new(i, j) = v(i, j) + dt * ( &
                     -(u(i, j) * (v(i+1, j) - v(i-1, j)) / (2.0 * dx) + &
                       v(i, j) * (v(i, j+1) - v(i, j-1)) / (2.0 * dy)) + &
                     (1.0 / Re) * ((v(i+1, j) - 2.0 * v(i, j) + v(i-1, j)) / dx**2 + &
                                   (v(i, j+1) - 2.0 * v(i, j) + v(i, j-1)) / dy**2) + &
-                    (-Jz(i, j) * Bx(i, j) )) 
+                    (Jz(i,j) * Bx(i,j) ))
             end do
         end do
     end subroutine update_velocity
+
 
     !============================================================
     ! Subroutine: Update the magnetic field using the induction equation
