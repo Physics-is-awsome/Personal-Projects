@@ -1,31 +1,27 @@
+import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Load simulation data
-data = np.loadtxt("mhd_results.txt")
-Nx, Ny = 50, 50  # Define grid size
-u = data[:, 2].reshape(Nx, Ny)
-v = data[:, 3].reshape(Nx, Ny)
-Bx = data[:, 4].reshape(Nx, Ny)
-By = data[:, 5].reshape(Nx, Ny)
+# Open the HDF5 file in read mode
+file_path = 'velocity_v.h5'
+with h5py.File(file_path, 'r') as file:
+    # Access the "velocity_v" dataset
+    v_data = np.array(file['velocity_v'])
 
-# Create a grid
-x = np.arange(Nx)
-y = np.arange(Ny)
-X, Y = np.meshgrid(x, y)
+# Create a heatmap
+plt.figure(figsize=(10, 8))
+plt.imshow(v_data, cmap='viridis')  # 'viridis' is a good colormap for scientific data
+plt.colorbar(label='Velocity v')
+plt.title('2D Velocity Field (v)')
+plt.xlabel('X Index')
+plt.ylabel('Y Index')
 
-# Visualize velocity field as a quiver plot
-plt.figure(figsize=(8, 6))
-plt.quiver(X, Y, u, v, scale=1, color="blue")
-plt.title("Velocity Field")
-plt.xlabel("X")
-plt.ylabel("Y")
+# Optionally, add grid lines for better readability
+plt.grid(True, linestyle='--', alpha=0.7)
+
+# Show the plot
 plt.show()
 
-# Visualize magnetic field as a quiver plot
-plt.figure(figsize=(8, 6))
-plt.quiver(X, Y, Bx, By, scale=1, color="red")
-plt.title("Magnetic Field")
-plt.xlabel("X")
-plt.ylabel("Y")
-plt.show()
+# Save the plot as an image (optional)
+plt.savefig('velocity_v_heatmap.png', dpi=300, bbox_inches='tight')
+plt.close()
