@@ -56,9 +56,7 @@ module mhd_module
         real(kind=8), intent(in) :: u(:,:), v(:,:), Jz(:,:), Bx(:,:), By(:,:), p(:,:)
         real(kind=8), intent(out) :: u_new(:,:), v_new(:,:)
         real(kind=8), intent(in) :: dx, dy, dt, Re
-        REAL :: old_phi(nx, ny), residual
-        REAL :: rhs
-        REAL :: div
+\
         integer :: i, j
 
         do i = 2, size(u, 1) - 1
