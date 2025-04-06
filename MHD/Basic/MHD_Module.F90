@@ -61,13 +61,13 @@ module mhd_module
                       v(i, j) * (u(i, j+1) - u(i, j-1)) / (2.0 * dy)) + &
                     (1.0 / Re) * ((u(i+1, j) - 2.0 * u(i, j) + u(i-1, j)) / dx**2 + &
                                   (u(i, j+1) - 2.0 * u(i, j) + u(i, j-1)) / dy**2) + &
-                    (Jx(i, j) * By(i, j) - Jy(i, j) * Bx(i, j)) )
+                    (Jz(i, j) * By(i, j)) )
                 v_new(i, j) = v(i, j) + dt * ( &
                     -(u(i, j) * (v(i+1, j) - v(i-1, j)) / (2.0 * dx) + &
                       v(i, j) * (v(i, j+1) - v(i, j-1)) / (2.0 * dy)) + &
                     (1.0 / Re) * ((v(i+1, j) - 2.0 * v(i, j) + v(i-1, j)) / dx**2 + &
                                   (v(i, j+1) - 2.0 * v(i, j) + v(i, j-1)) / dy**2) + &
-                    (Jx(i, j) * Bx(i, j) - Jy(i, j) * By(i, j)) )
+                    (-Jz(i, j) * Bx(i, j) )) 
             end do
         end do
     end subroutine update_velocity
