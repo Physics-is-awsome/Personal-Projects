@@ -21,7 +21,7 @@ program mhd_solver
     real(kind=8) :: u(Nx, Ny), v(Nx, Ny)             ! Velocity components
     real(kind=8) :: Bx(Nx, Ny), By(Nx, Ny)           ! Magnetic field components
     real(kind=8) :: p(Nx, Ny)                        ! Pressure field
-    real(kind=8) :: Jx(Nx, Ny), Jy(Nx, Ny)           ! Current density
+    real(kind=8) :: Jz(Nx, Ny)                       ! Current density
     real(kind=8) :: u_new(Nx, Ny), v_new(Nx, Ny)     ! Updated velocity components
     real(kind=8) :: Bx_new(Nx, Ny), By_new(Nx, Ny)   ! Updated magnetic field components
 
@@ -46,10 +46,10 @@ program mhd_solver
     !============================================================
     do n = 1, Nt
         ! Compute current density (J = curl(B))
-        call compute_current(Bx, By, Jx, Jy, dx, dy)
+        call compute_current(Bx, By, Jz, dx, dy)
 
         ! Update velocity field (momentum equation)
-        call update_velocity(u, v, Jx, Jy, Bx, By, p, u_new, v_new, dx, dy, dt, Re)
+        call update_velocity(u, v, Jz, Bx, By, p, u_new, v_new, dx, dy, dt, Re)
 
         ! Update magnetic field (induction equation)
         call update_magnetic_field(Bx, By, u, v, Bx_new, By_new, dx, dy, dt, Rm)
