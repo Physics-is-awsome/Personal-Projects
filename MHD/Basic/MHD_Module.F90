@@ -13,8 +13,11 @@ module mhd_module
         character(len=256) :: line
         integer :: unit
 
-        open(unit=10, file='config.txt', status='old', action='readwrite')
-
+        open(unit=10, file='config.txt', status='old', action='read', iostat=io_status )
+        IF (io_status /= 0) THEN
+            PRINT *, "Error opening config file:", io_status
+            STOP
+        END IF
         do
             read(unit, '(A)') line
             if (index(line, 'u_value') /= 0) read(line, '("u_value =", F8.2)') u
