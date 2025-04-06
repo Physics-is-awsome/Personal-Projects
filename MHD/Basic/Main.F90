@@ -91,7 +91,7 @@ program mhd_solver
     call h5fclose_f(file_id, error)
     call h5close_f(error)
 
-end program mhd_solver
+
     ! Final output
     print *, "Simulation complete!"
 
