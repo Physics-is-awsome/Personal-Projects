@@ -2,7 +2,7 @@
 ! Main Program: MHD Solver
 !============================================================
 program mhd_solver
-    use mhd_module
+    use Module
     use hdf5
     implicit none
 
