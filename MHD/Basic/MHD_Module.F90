@@ -13,7 +13,7 @@ module mhd_module
         character(len=256) :: line
         integer :: unit
 
-        open(unit=10, file='config.txt', status='old', action='read')
+        open(unit=10, file='config.txt', status='old', action='readwrite')
 
         do
             read(unit, '(A)') line
