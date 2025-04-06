@@ -11,8 +11,8 @@ with h5py.File(file_path, 'r') as file:
 # Create a heatmap
 plt.figure(figsize=(10, 8))
 plt.imshow(v_data, cmap='viridis')  # 'viridis' is a good colormap for scientific data
-plt.colorbar(label='Velocity v')
-plt.title('2D Velocity Field (m/s)')
+plt.colorbar(label='Velocity(m/s)')
+plt.title('2D Velocity Field (v)')
 plt.xlabel('X Index')
 plt.ylabel('Y Index')
 
