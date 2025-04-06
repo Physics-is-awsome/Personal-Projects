@@ -16,8 +16,7 @@ module mhd_module
         open(unit=10, file='config.txt', status='old', action='read')
 
         do
-            read(unit, '(A)', iostat=io) line
-            if (io /= 0) exit
+            read(unit, '(A)') line
             if (index(line, 'u_value') /= 0) read(line, '("u_value =", F8.2)') u
             if (index(line, 'v_value') /= 0) read(line, '("v_value =", F8.2)') v
             if (index(line, 'Bx_value') /= 0) read(line, '("B_value =", F8.2)') Bx
