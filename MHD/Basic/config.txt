@@ -5,7 +5,4 @@ Bx_value = 0.1 * sin(2.0 * 3.14159 * j / size(u, 2))  ! Magnetic field (x-compon
 By_value = 0.1 * cos(2.0 * 3.14159 * i / size(u, 1))  ! Magnetic field (y-component)
 p_value = 0.0   ! Pressure
 
-! Values for simulation
-dx_value = 0.2
-dy_value = 0.2
-dt_value = 0.01
+
