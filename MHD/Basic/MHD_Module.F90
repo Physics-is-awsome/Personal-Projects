@@ -30,12 +30,14 @@ module mhd_module
     subroutine compute_current(Bx, By, Jx, Jy, dx, dy)
         real(kind=8), intent(in) :: Bx(:,:), By(:,:), dx, dy
         real(kind=8), intent(out) :: Jx(:,:), Jy(:,:)
+        REAL :: Muo_in
+        Muo_in= 7.9577D+5
         integer :: i, j
 
         do i = 2, size(Bx, 1) - 1
             do j = 2, size(Bx, 2) - 1
-                Jx(i, j) = (By(i, j+1) - By(i, j-1)) / (2.0 * dy)     ! Compute Jx
-                Jy(i, j) = -(Bx(i+1, j) - Bx(i-1, j)) / (2.0 * dx)    ! Compute Jy
+                Jx(i, j) = Muo_in * (By(i, j+1) - By(i, j-1)) / (2.0 * dy)     ! Compute Jx
+                Jy(i, j) = Muo_in * -(Bx(i+1, j) - Bx(i-1, j)) / (2.0 * dx)    ! Compute Jy
             end do
         end do
     end subroutine compute_current
