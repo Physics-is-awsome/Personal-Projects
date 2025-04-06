@@ -34,12 +34,15 @@ module mhd_module
         Mu_in= 7.9577D+5
         integer :: i, j
 
-        do i = 2, size(Bx, 1) - 1
-            do j = 2, size(Bx, 2) - 1
-                Jx(i, j) = Mu_in * (By(i, j+1) - By(i, j-1)) / (2.0 * dy)     ! Compute Jx
-                Jy(i, j) = Mu_in * -(Bx(i+1, j) - Bx(i-1, j)) / (2.0 * dx)    ! Compute Jy
-            end do
-        end do
+
+
+        ! Calculate current density Jz using finite differences
+        DO j = 2, ny-1
+            DO i = 2, nx-1
+                Jz(i, j) = ( (By(i+1, j) - By(i-1, j)) / (2.0 * dx) - &
+                            (Bx(i, j+1) - Bx(i, j-1)) / (2.0 * dy) ) / mu0
+            END DO
+        END DO
     end subroutine compute_current
 
     !============================================================
