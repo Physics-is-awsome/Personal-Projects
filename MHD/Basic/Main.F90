@@ -6,32 +6,13 @@ program mhd_solver
     use hdf5
     implicit none
 
-
-    real(kind=8), intent(out) :: Nx, Ny, Nt, Lx, Ly, dt, Re, Rm
-    character(len=256) :: line
-    integer :: unit, io_stat
-
-    open(unit=10, file='config.txt', status='old', action='read', iostat=io_stat )
-    IF (io_stat /= 0) THEN
-        PRINT *, "Error opening config file:", io_stat
-        STOP
-    END IF
-    do
-        read(unit, '(A)') line
-        if (index(line, 'Nx_value') /= 0) read(line, '("Nx_value =", F8.2)') Nx
-        if (index(line, 'Ny_value') /= 0) read(line, '("Ny_value =", F8.2)') Ny
-        if (index(line, 'Nt_value') /= 0) read(line, '("Nt_value =", F8.2)') Nt
-        if (index(line, 'Lx_value') /= 0) read(line, '("Nx_value =", F8.2)') Lx
-        if (index(line, 'Ly_value') /= 0) read(line, '("Ly_value =", F8.2)') Ly
-        if (index(line, 'dt_value') /= 0) read(line, '("dt_value =", F8.2)') dt
-        if (index(line, 'Re_value') /= 0) read(line, '("Re_value =", F8.2)') Re
-        if (index(line, 'Rm_value') /= 0) read(line, '("Rm_value =", F8.2)') Rm
-    end do
-
-
-    close(unit)
     ! Parameters
-
+    integer, parameter :: Nx = 50, Ny = 50           ! Grid dimensions
+    integer, parameter :: Nt = 1000                  ! Number of time steps
+    real(kind=8), parameter :: Lx = 1.0, Ly = 1.0    ! Domain size
+    real(kind=8), parameter :: dt = 0.001            ! Time step size
+    real(kind=8), parameter :: Re = 100.0            ! Reynolds number
+    real(kind=8), parameter :: Rm = 100.0            ! Magnetic Reynolds number
     real(kind=8), parameter :: dx = Lx / Nx          ! Grid spacing in x
     real(kind=8), parameter :: dy = Ly / Ny          ! Grid spacing in y
 
