@@ -7,7 +7,7 @@ program mhd_solver
     implicit none
 
 
-    real(kind=8), intent(out) :: u, v, Bx, By, p, Nx, Ny, Nt, Lx, Ly, dt, Re, Rm
+    real(kind=8), intent(out) :: Nx, Ny, Nt, Lx, Ly, dt, Re, Rm
     character(len=256) :: line
     integer :: unit, io_stat
 
@@ -53,7 +53,7 @@ program mhd_solver
     !============================================================
     ! Initialize fields
     !============================================================
-    call read_config(u, v, Bx, By, p)
+    call read_config(u(i, j), v(i, j), Bx(i, j), By(i, j), p(i, j))
 
     ! Initialize HDF5 library
     call h5open_f(error)
