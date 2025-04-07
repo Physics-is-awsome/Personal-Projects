@@ -12,8 +12,8 @@ module mhd_module
         real(kind=8), intent(out) :: u(:,:), v(:,:), Bx(:,:), By(:,:), p(:,:)
         integer, int(in) :: nx, ny
         character(len=256) :: line
-        integer :: unit
-        integer :: unit, io_status, i, j
+
+        integer :: unit, io_stat, i, j
 
         open(unit=10, file='config.txt', status='old', action='read', iostat=io_status )
         IF (io_status /= 0) THEN
