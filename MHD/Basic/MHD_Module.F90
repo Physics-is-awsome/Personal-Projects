@@ -15,7 +15,7 @@ module mhd_module
 
         integer :: unit, io_stat, i, j
 
-        open(unit=10, file='config.txt', status='old', action='read', iostat=io_status )
+        open(unit=10, file='config.txt', status='old', action='read', iostat=io_stat )
         IF (io_status /= 0) THEN
             PRINT *, "Error opening config file:", io_status
             STOP
