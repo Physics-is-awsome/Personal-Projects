@@ -1,8 +1,42 @@
 ! Values of things
-u_value = 0.0                    ! Initialize velocity components to zero
+u_value = 0.0    ! Initialize velocity components to zero
+u_value = 0.0
+u_value = 0.0   
+u_value = 0.0
+
 v_value = 0.0
+v_value = 0.0
+v_value = 0.0
+v_value = 0.0
+
 Bx_value = 0.1 * sin(2.0 * 3.14159 * j / size(u, 2))  ! Magnetic field (x-component)
+Bx_value = 0.1 * sin(2.0 * 3.14159 * j / size(u, 2))
+Bx_value = 0.1 * sin(2.0 * 3.14159 * j / size(u, 2))  
+Bx_value = 0.1 * sin(2.0 * 3.14159 * j / size(u, 2))
+
 By_value = 0.1 * cos(2.0 * 3.14159 * i / size(u, 1))  ! Magnetic field (y-component)
+By_value = 0.1 * cos(2.0 * 3.14159 * i / size(u, 1))
+By_value = 0.1 * cos(2.0 * 3.14159 * i / size(u, 1))  
+By_value = 0.1 * cos(2.0 * 3.14159 * i / size(u, 1))
+
 p_value = 0.0   ! Pressure
+p_value = 0.0
+p_value = 0.0
+p_value = 0.0
 
+! Parameters
+Nx_value = 50 !Grid diminsions X
 
+Ny_value = 50 !Grid diminsions y
+
+Nt_value = 1000 !Number of time steps
+
+Lx_value = 1.0 !Domain size
+
+Ly_value = 1.0 !Domain size
+
+dt_value = 0.001 !Time step
+
+Re_value = 100.0 !Reynold Numbers
+
+Rm_value = 100.0 !Magnetic Reynold Numbers
