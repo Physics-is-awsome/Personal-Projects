@@ -7,7 +7,7 @@ program mhd_solver
     implicit none
 
 
-    real(kind=8), intent(out) :: u, v, Bx, By, p
+    real(kind=8), intent(out) :: u, v, Bx, By, p, Nx, Ny, Nt, Lx, Ly, dt, Re, Rm
     character(len=256) :: line
     integer :: unit, io_stat
 
@@ -21,7 +21,7 @@ program mhd_solver
         if (index(line, 'Nx_value') /= 0) read(line, '("Nx_value =", F8.2)') Nx
         if (index(line, 'Ny_value') /= 0) read(line, '("Ny_value =", F8.2)') Ny
         if (index(line, 'Nt_value') /= 0) read(line, '("Nt_value =", F8.2)') Nt
-        if (index(line, 'Lx_value') /= 0) read(line, '("Nx_value =", F8.2)') Nx
+        if (index(line, 'Lx_value') /= 0) read(line, '("Nx_value =", F8.2)') Lx
         if (index(line, 'Ly_value') /= 0) read(line, '("Ly_value =", F8.2)') Ly
         if (index(line, 'dt_value') /= 0) read(line, '("dt_value =", F8.2)') dt
         if (index(line, 'Re_value') /= 0) read(line, '("Re_value =", F8.2)') Re
