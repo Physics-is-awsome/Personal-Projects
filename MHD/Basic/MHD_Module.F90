@@ -17,7 +17,7 @@ module mhd_module
 
         open(unit=10, file='config.txt', status='old', action='read', iostat=io_stat )
         IF (io_status /= 0) THEN
-            PRINT *, "Error opening config file:", io_status
+            PRINT *, "Error opening config file:", io_stat
             STOP
         END IF
         do i=1, nx
