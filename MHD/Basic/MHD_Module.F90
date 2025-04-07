@@ -8,25 +8,27 @@ module mhd_module
     ! ======================
     ! Read Config file!
     ! ===============
-    subroutine read_config(u, v, Bx, By, p)
-        real(kind=8), intent(out) :: u, v, Bx, By, p
+    subroutine read_config(u, v, Bx, By, p, nx, ny)
+        real(kind=8), intent(out) :: u(:,:), v(:,:), Bx(:,:), By(:,:), p(:,:)
+        integer, int(in) :: nx, ny
         character(len=256) :: line
         integer :: unit
-        integer :: io_status
+        integer :: unit, io_status, i, j
 
         open(unit=10, file='config.txt', status='old', action='read', iostat=io_status )
         IF (io_status /= 0) THEN
             PRINT *, "Error opening config file:", io_status
             STOP
         END IF
-        do
-            read(unit, '(A)') line
-            if (index(line, 'u_value') /= 0) read(line, '("u_value =", F8.2)') u
-            if (index(line, 'v_value') /= 0) read(line, '("v_value =", F8.2)') v
-            if (index(line, 'Bx_value') /= 0) read(line, '("Bx_value =", F8.2)') Bx
-            if (index(line, 'By_value') /= 0) read(line, '("By_value =", F8.2)') By
-            if (index(line, 'p_value') /= 0) read(line, '("p_value =", F8.2)') p
-
+        do i=1, nx
+            do j = 1, ny
+                read(unit, '(A)') line
+                if (index(line, 'u_value') /= 0) read(line, '("u_value =", F8.2)') u
+                if (index(line, 'v_value') /= 0) read(line, '("v_value =", F8.2)') v
+                if (index(line, 'Bx_value') /= 0) read(line, '("Bx_value =", F8.2)') Bx
+                if (index(line, 'By_value') /= 0) read(line, '("By_value =", F8.2)') By
+                if (index(line, 'p_value') /= 0) read(line, '("p_value =", F8.2)') p
+            end do
         end do
 
         close(unit)
