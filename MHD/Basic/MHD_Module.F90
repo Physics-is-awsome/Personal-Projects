@@ -58,7 +58,7 @@ module mhd_module
     !============================================================
     subroutine initialize_fields(u, v, Bx, By, p)
         real(kind=8), intent(out) :: u(:,:), v(:,:), Bx(:,:), By(:,:), p(:,:)
-        real(kind=8) :: u_value, v_value, Bx_value, By_value, p_value 
+        real(kind=8) :: u_value(:,:), v_value(:,:), Bx_value(:,:), By_value(:,:), p_value(:,:) 
         integer :: i, j
 
         call read_config(u_value, v_value, Bx_value, By_value, p_value)
