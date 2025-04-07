@@ -3,7 +3,7 @@
 !============================================================
 
 module mhd_module
-
+    implicit none
     contains
     ! ======================
     ! Read Config file!
