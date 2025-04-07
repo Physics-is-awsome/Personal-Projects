@@ -9,8 +9,8 @@ module mhd_module
     ! Read Config file!
     ! ===============
     subroutine read_config(u, v, Bx, By, p, nx, ny)
-        real(kind=8), intent(out) :: u(:,:), v(:,:), Bx(:,:), By(:,:), p(:,:)
-        integer, int(in) :: nx, ny
+        real(kind=8), intent(inout) :: u(:,:), v(:,:), Bx(:,:), By(:,:), p(:,:)
+        integer, intent(in) :: nx, ny
         character(len=256) :: line
 
         integer :: unit, io_stat, i, j
@@ -23,11 +23,11 @@ module mhd_module
         do i=1, nx
             do j = 1, ny
                 read(unit, '(A)') line
-                if (index(line, 'u_value') /= 0) read(line, '("u_value =", F8.2)') u
-                if (index(line, 'v_value') /= 0) read(line, '("v_value =", F8.2)') v
-                if (index(line, 'Bx_value') /= 0) read(line, '("Bx_value =", F8.2)') Bx
-                if (index(line, 'By_value') /= 0) read(line, '("By_value =", F8.2)') By
-                if (index(line, 'p_value') /= 0) read(line, '("p_value =", F8.2)') p
+                if (index(line, 'u_value') /= 0) read(line, '("u_value =", F8.2)', iostat=io_stat) u(i,j)
+                if (index(line, 'v_value') /= 0) read(line, '("v_value =", F8.2)'iostat=io_stat) v(i,j)
+                if (index(line, 'Bx_value') /= 0) read(line, '("Bx_value =", F8.2)'iostat=io_stat) Bx(i,j)
+                if (index(line, 'By_value') /= 0) read(line, '("By_value =", F8.2)'iostat=io_stat) By(i,j)
+                if (index(line, 'p_value') /= 0) read(line, '("p_value =", F8.2)'iostat=io_stat) p(i,j)
             end do
         end do
 
