@@ -12,23 +12,42 @@ module mhd_module
         real(kind=8), intent(inout) :: u(:,:), v(:,:), Bx(:,:), By(:,:), p(:,:)
         integer, intent(in) :: nx, ny
         character(len=256) :: line
+        character(len=8) :: var_name
+        real(kind=8) :: values(nx)
 
         integer :: unit, io_stat, i, j
 
-        open(unit=10, file='config.txt', status='old', action='read', iostat=io_stat )
-        IF (io_stat /= 0) THEN
-            PRINT *, "Error opening config file:", io_stat
-            STOP
-        END IF
-        do i=1, nx
-            do j = 1, ny
-                read(unit, '(A)') line
-                if (index(line, 'u_value') /= 0) read(line, '("u_value =", F8.2)', iostat=io_stat) u(i,j)
-                if (index(line, 'v_value') /= 0) read(line, '("v_value =", F8.2)', iostat=io_stat) v(i,j)
-                if (index(line, 'Bx_value') /= 0) read(line, '("Bx_value =", F8.2)', iostat=io_stat) Bx(i,j)
-                if (index(line, 'By_value') /= 0) read(line, '("By_value =", F8.2)', iostat=io_stat) By(i,j)
-                if (index(line, 'p_value') /= 0) read(line, '("p_value =", F8.2)', iostat=io_stat) p(i,j)
-            end do
+        ! Check if the arrays are rank-2
+        if (rank(u) /= 2 .or. rank(v) /= 2 .or. rank(Bx) /= 2 .or. rank(By) /= 2 .or. rank(p) /= 2) then
+            print *, "Error: Input variables must be rank-2 arrays."
+            stop
+        end if
+
+        open(unit=10, file='config.txt', status='old', action='read', iostat=io_stat)
+        if (io_stat /= 0) then
+            print *, "Error opening config file:", io_stat
+            stop
+        end if
+
+        do i = 1, nx * 5  ! Reading values for all arrays
+            read(unit, '(A)', iostat=io_stat) line
+            if (io_stat /= 0) then
+                print *, "Error reading config file:", io_stat
+                exit
+            end if
+
+            read(line, '(A8, 1X, F8.2, 1X, F8.2, 1X, F8.2)', iostat=io_stat) var_name, values(1), values(2), values(3)
+            if (var_name == 'u_value') then
+                u(i, :) = values(:)
+            else if (var_name == 'v_value') then
+                v(i, :) = values(:)
+            else if (var_name == 'Bx_value') then
+                Bx(i, :) = values(:)
+            else if (var_name == 'By_value') then
+                By(i, :) = values(:)
+            else if (var_name == 'p_value') then
+                p(i, :) = values(:)
+            end if
         end do
 
         close(unit)
