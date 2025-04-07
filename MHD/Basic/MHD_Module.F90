@@ -24,10 +24,10 @@ module mhd_module
             do j = 1, ny
                 read(unit, '(A)') line
                 if (index(line, 'u_value') /= 0) read(line, '("u_value =", F8.2)', iostat=io_stat) u(i,j)
-                if (index(line, 'v_value') /= 0) read(line, '("v_value =", F8.2)'iostat=io_stat) v(i,j)
-                if (index(line, 'Bx_value') /= 0) read(line, '("Bx_value =", F8.2)'iostat=io_stat) Bx(i,j)
-                if (index(line, 'By_value') /= 0) read(line, '("By_value =", F8.2)'iostat=io_stat) By(i,j)
-                if (index(line, 'p_value') /= 0) read(line, '("p_value =", F8.2)'iostat=io_stat) p(i,j)
+                if (index(line, 'v_value') /= 0) read(line, '("v_value =", F8.2)', iostat=io_stat) v(i,j)
+                if (index(line, 'Bx_value') /= 0) read(line, '("Bx_value =", F8.2)', iostat=io_stat) Bx(i,j)
+                if (index(line, 'By_value') /= 0) read(line, '("By_value =", F8.2)', iostat=io_stat) By(i,j)
+                if (index(line, 'p_value') /= 0) read(line, '("p_value =", F8.2)', iostat=io_stat) p(i,j)
             end do
         end do
 
