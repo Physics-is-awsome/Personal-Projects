@@ -7,6 +7,29 @@ program mhd_solver
     implicit none
 
 
+    real(kind=8), intent(out) :: u, v, Bx, By, p
+    character(len=256) :: line
+    integer :: unit
+
+    open(unit=10, file='config.txt', status='old', action='read', iostat=io_status )
+    IF (io_status /= 0) THEN
+        PRINT *, "Error opening config file:", io_status
+        STOP
+    END IF
+    do
+        read(unit, '(A)') line
+        if (index(line, 'Nx_value') /= 0) read(line, '("Nx_value =", F8.2)') Nx
+        if (index(line, 'Ny_value') /= 0) read(line, '("Ny_value =", F8.2)') Ny
+        if (index(line, 'Nt_value') /= 0) read(line, '("Nt_value =", F8.2)') Nt
+        if (index(line, 'Lx_value') /= 0) read(line, '("Nx_value =", F8.2)') Nx
+        if (index(line, 'Ly_value') /= 0) read(line, '("Ly_value =", F8.2)') Ly
+        if (index(line, 'dt_value') /= 0) read(line, '("dt_value =", F8.2)') dt
+        if (index(line, 'Re_value') /= 0) read(line, '("Re_value =", F8.2)') Re
+        if (index(line, 'Rm_value') /= 0) read(line, '("Rm_value =", F8.2)') Rm
+    end do
+
+
+    close(unit)
     ! Parameters
     integer, parameter :: Nx = 50, Ny = 50           ! Grid dimensions
     integer, parameter :: Nt = 1000                  ! Number of time steps
