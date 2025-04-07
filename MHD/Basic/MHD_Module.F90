@@ -8,50 +8,24 @@ module mhd_module
     ! ======================
     ! Read Config file!
     ! ===============
-    subroutine read_config(u, v, Bx, By, p, nx, ny)
-        real(kind=8), intent(inout) :: u(:,:), v(:,:), Bx(:,:), By(:,:), p(:,:)
-        integer, intent(in) :: nx, ny
-        character(len=256) :: line
-        character(len=8) :: var_name
-        real(kind=8) :: values(nx)
 
-        integer :: unit, io_stat, i, j
+    !============================================================
+    ! Subroutine: Initialize the velocity, magnetic field, and pressure fields
+    !============================================================
+    subroutine initialize_fields(u, v, Bx, By, p)
+        real(kind=8), intent(out) :: u(:,:), v(:,:), Bx(:,:), By(:,:), p(:,:)
+        integer :: i, j
 
-        ! Check if the arrays are rank-2
-        if (rank(u) /= 2 .or. rank(v) /= 2 .or. rank(Bx) /= 2 .or. rank(By) /= 2 .or. rank(p) /= 2) then
-            print *, "Error: Input variables must be rank-2 arrays."
-            stop
-        end if
-
-        open(unit=10, file='config.txt', status='old', action='read', iostat=io_stat)
-        if (io_stat /= 0) then
-            print *, "Error opening config file:", io_stat
-            stop
-        end if
-
-        do i = 1, nx * 5  ! Reading values for all arrays
-            read(unit, '(A)', iostat=io_stat) line
-            if (io_stat /= 0) then
-                print *, "Error reading config file:", io_stat
-                exit
-            end if
-
-            read(line, '(A8, 1X, F8.2, 1X, F8.2, 1X, F8.2)', iostat=io_stat) var_name, values(1), values(2), values(3)
-            if (var_name == 'u_value') then
-                u(i, :) = values(:)
-            else if (var_name == 'v_value') then
-                v(i, :) = values(:)
-            else if (var_name == 'Bx_value') then
-                Bx(i, :) = values(:)
-            else if (var_name == 'By_value') then
-                By(i, :) = values(:)
-            else if (var_name == 'p_value') then
-                p(i, :) = values(:)
-            end if
+        do i = 1, size(u, 1)
+            do j = 1, size(u, 2)
+                u(i, j) = 0.0                    ! Initialize velocity components to zero
+                v(i, j) = 0.0
+                Bx(i, j) = 0.1 * sin(2.0 * 3.14159 * j / size(u, 2))  ! Magnetic field (x-component)
+                By(i, j) = 0.1 * cos(2.0 * 3.14159 * i / size(u, 1))  ! Magnetic field (y-component)
+                p(i, j) = 0.0                    ! Initialize pressure to zero
+            end do
         end do
-
-        close(unit)
-    end subroutine read_config
+    end subroutine initialize_fields
 
 
 
