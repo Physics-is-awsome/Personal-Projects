@@ -9,11 +9,11 @@ program mhd_solver
 
     real(kind=8), intent(out) :: u, v, Bx, By, p
     character(len=256) :: line
-    integer :: unit
+    integer :: unit, io_stat
 
-    open(unit=10, file='config.txt', status='old', action='read', iostat=io_status )
+    open(unit=10, file='config.txt', status='old', action='read', iostat=io_stat )
     IF (io_status /= 0) THEN
-        PRINT *, "Error opening config file:", io_status
+        PRINT *, "Error opening config file:", io_stat
         STOP
     END IF
     do
