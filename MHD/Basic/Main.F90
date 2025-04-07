@@ -46,10 +46,10 @@ program mhd_solver
     !============================================================
     do n = 1, Nt
         ! Compute current density (J = curl(B))
-        call compute_current(Bx, By, Jx, Jy, dx, dy)
+        call compute_current(Bx, By, Jx, dx, dy)
 
         ! Update velocity field (momentum equation)
-        call update_velocity(u, v, Jx, Jy, Bx, By, p, u_new, v_new, dx, dy, dt, Re)
+        call update_velocity(u, v, Jz, Bx, By, p, u_new, v_new, dx, dy, dt, Re)
 
         ! Update magnetic field (induction equation)
         call update_magnetic_field(Bx, By, u, v, Bx_new, By_new, dx, dy, dt, Rm)
