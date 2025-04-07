@@ -34,7 +34,7 @@ program mhd_solver
     !============================================================
     ! Initialize fields
     !============================================================
-    call read_config(u(i, j), v(i, j), Bx(i, j), By(i, j), p(i, j))
+    call read_config(u, v, Bx, By, p)
 
     ! Initialize HDF5 library
     call h5open_f(error)
