@@ -9,8 +9,15 @@ program mhd_solver
     !==================
     ! Parameters
     !=======================
-    real(kind=8) :: u(Nx, Ny), v(Nx, Ny), Bx(Nx, Ny), By(Nx, Ny), p(Nx, Ny), u_new(Nx, Ny), v_new(Nx, Ny), Bx_new(Nx, Ny), By_new(Nx, Ny), Jz(Nx, Ny)
-    integer :: n
+    ! Field arrays
+    real(kind=8) :: u(Nx, Ny), v(Nx, Ny)             ! Velocity components
+    real(kind=8) :: Bx(Nx, Ny), By(Nx, Ny)           ! Magnetic field components
+    real(kind=8) :: p(Nx, Ny)                        ! Pressure field
+    real(kind=8) :: Jz(Nx, Ny)                       ! Current density
+    real(kind=8) :: u_new(Nx, Ny), v_new(Nx, Ny)     ! Updated velocity components
+    real(kind=8) :: Bx_new(Nx, Ny), By_new(Nx, Ny)   ! Updated magnetic field components
+ 
+    integer :: n                                      ! Time step counter
 
     ! HDF5 variables
     integer(hid_t) :: file_id, dset_id, dataspace_id
