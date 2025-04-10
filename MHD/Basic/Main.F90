@@ -9,7 +9,7 @@ program mhd_solver
     !==================
     ! Parameters
     !=======================
-    call Parameters(Nx, Ny, Nt, Lx, Ly, dt, Re, R,, dx, dy, u(Nx, Ny), v(Nx, Ny), Bx(Nx, Ny), By(Nx, Ny), p(Nx, Ny), Jz(Nx, Ny), Jy(Nx, Ny), u_new(Nx, Ny), v_new(Nx, Ny), Bx_new(Nx, Ny), By_new(Nx, Ny)
+    real(kind=8) :: u(Nx, Ny), v(Nx, Ny), Bx(Nx, Ny), By(Nx, Ny), p(Nx, Ny)
 
     ! HDF5 variables
     integer(hid_t) :: file_id, dset_id, dataspace_id
