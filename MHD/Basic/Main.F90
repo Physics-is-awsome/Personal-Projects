@@ -3,6 +3,7 @@
 !============================================================
 program mhd_solver
     use MHD_Module
+    use Initial_var
     use hdf5
     implicit none
     !==================
