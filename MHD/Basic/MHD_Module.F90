@@ -11,7 +11,7 @@ module mhd_module
     !============================================================
     ! Subroutine: Initialize the velocity, magnetic field, and pressure fields
     !============================================================
-    call initialize_fields(u, v, Bx, By, p)
+
 
 
     !============================================================
