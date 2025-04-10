@@ -21,7 +21,7 @@ Module Initial_var
       integer, parameter :: Nt = 1000                  ! Number of time steps
       real(kind=8), parameter :: Lx = 1.0, Ly = 1.0    ! Domain size
       real(kind=8), parameter :: dt = 0.001            ! Time step size
-      (kind=8), parameter :: Re = 100.0            ! Reynolds number
+      real(kind=8), parameter :: Re = 100.0            ! Reynolds number
       real(kind=8), parameter :: Rm = 100.0            ! Magnetic Reynolds number
       real(kind=8), parameter :: dx = Lx / Nx          ! Grid spacing in x
       real(kind=8), parameter :: dy = Ly / Ny          ! Grid spacing in y
