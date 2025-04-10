@@ -4,6 +4,7 @@
 program mhd_solver
     use MHD_Module
     use hdf5
+    use Initial_var
     implicit none
 
 
@@ -26,7 +27,7 @@ program mhd_solver
     real(kind=8) :: Bx_new(Nx, Ny), By_new(Nx, Ny)   ! Updated magnetic field components
 
     integer :: n                                      ! Time step counter
-
+    
     ! HDF5 variables
     integer(hid_t) :: file_id, dset_id, dataspace_id
     integer :: error
