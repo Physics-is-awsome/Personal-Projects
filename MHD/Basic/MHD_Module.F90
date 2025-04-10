@@ -3,30 +3,15 @@
 !============================================================
 
 module mhd_module
+    use Initial_var
     implicit none
     contains
-    ! ======================
-    ! Read Config file!
-    ! ===============
+
 
     !============================================================
     ! Subroutine: Initialize the velocity, magnetic field, and pressure fields
     !============================================================
-    subroutine initialize_fields(u, v, Bx, By, p)
-        real(kind=8), intent(out) :: u(:,:), v(:,:), Bx(:,:), By(:,:), p(:,:)
-        integer :: i, j
-
-        do i = 1, size(u, 1)
-            do j = 1, size(u, 2)
-                u(i, j) = 0.0                    ! Initialize velocity components to zero
-                v(i, j) = 0.0
-                Bx(i, j) = 0.1 * sin(2.0 * 3.14159 * j / size(u, 2))  ! Magnetic field (x-component)
-                By(i, j) = 0.1 * cos(2.0 * 3.14159 * i / size(u, 1))  ! Magnetic field (y-component)
-                p(i, j) = 0.0                    ! Initialize pressure to zero
-            end do
-        end do
-    end subroutine initialize_fields
-
+    call initialize_fields(u, v, Bx, By, p)
 
 
     !============================================================
