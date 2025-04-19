@@ -7,7 +7,7 @@ Module Initial_var
   real(kind=8), parameter :: dx = Lx / Nx, dy = Ly / Ny   !Grid spacing
 
   contains 
-    subroutine initialize_fields(u, v, Bx, By, p)
+    subroutine velocity_fields(u, v, Bx, By, p)
         real(kind=8), intent(out) :: u(:,:), v(:,:), Bx(:,:), By(:,:), p(:,:)
         integer :: i, j
 
@@ -21,5 +21,17 @@ Module Initial_var
             end do
         end do
     end subroutine initialize_fields
-
+    ! Initialize fields for tempeture 
+    subroutine heat_fields
+    T = 0.0
+    eta = 0.001
+    sigma = 1.0d-21
+    do i = 1, nx
+      do j = 1, ny
+        ! Initial temperature: Gaussian blob (actual temperature T)
+        T(i,j) = exp(-((i*dx-0.5*Lx)**2 + (j*dy-0.5*Ly)**2)/(0.1**2))
+        ! Magnetic field: Vary Bx for non-zero Jz
+        Bx(i,j) = 0.1 * sin(2*3.14159*i*dx/Lx)
+      end do
+    end do
 End Module
