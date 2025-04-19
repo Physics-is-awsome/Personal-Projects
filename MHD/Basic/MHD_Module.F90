@@ -68,7 +68,59 @@ module mhd_module
 
     end subroutine update_velocity
 
+    !============================================================
+    ! Update Heat transport 
+    !===========================================================
+    subroutine Heat_Transport(T(:,:), T_new(:,:), p(:,:), Ab(:,:), J_z(:,:), dx, dy, dt, ny, nx kappa, Bx(:,:), By(:,:), eta, sigma)
+        real(kind=8), intent(in) :: T(:,:), p(:,:), Ab(:,:), J(:,:),Bx(:,:), By(:,:), dx, dy, dt, kappa, ny, nx, eta, sigma
+        real(kind=8), intent(out) :: T_new(:,:)
+        integer :: i, j
 
+        contains
+        ! Function to compute Laplacian using central finite differences
+        function laplacian(T, i, j, dx, dy) result(lap)
+            real, intent(in) :: T(:,:)  ! Temperature field
+            integer, intent(in) :: i, j  ! Grid indices
+            real, intent(in) :: dx, dy  ! Grid spacings
+            real :: lap
+            lap = (T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
+                (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2
+        end function laplacian
+
+        ! Function to compute Ohmic heating using Jz
+        function ohmic_heating(Bx, By, i, j, dx, dy, eta) result(Q)
+            real, intent(in) :: Bx(:,:), By(:,:)  ! Magnetic field components
+            integer, intent(in) :: i, j  ! Grid indices
+            real, intent(in) :: dx, dy, eta
+            real :: Q, Jz
+            Jz = (1.0/mu0) * ((By(i+1,j) - By(i-1,j)) / (2*dx) - &
+                            (Bx(i,j+1) - Bx(i,j-1)) / (2*dy))  ! Central difference for Jz
+            Q = eta * Jz**2
+        end function ohmic_heating
+
+        ! Function to compute radiative loss
+        function radiative_loss(T, i, j, sigma) result(loss)
+            real, intent(in) :: T(:,:)  ! Temperature field
+            integer, intent(in) :: i, j
+            real, intent(in) :: sigma   ! Radiative loss coefficient
+            real :: loss
+            loss = -sigma * T(i,j)**4   ! Optically thin approximation
+        end function radiative_loss
+        function Heat_Transport
+          ! Time loop
+        time = 0.0
+        
+        ! Update interior points to compute new temperature T
+        do i = 2, nx-1
+            do j = 2, ny-1
+                T_new(i,j) = T(i,j) + dt * (kappa * laplacian(T, i, j, dx, dy) + &
+                                        ohmic_heating(Bx, By, i, j, dx, dy, eta) + &
+                                        radiative_loss(T, i, j, sigma))
+                    ! Prevent negative temperatures
+                if (T_new(i,j) < 0.0) T_new(i,j) = 0.0
+            end do
+        end do
+    end subroutine Heat_Transport
     !============================================================
     ! Subroutine: Update the magnetic field using the induction equation
     !============================================================
