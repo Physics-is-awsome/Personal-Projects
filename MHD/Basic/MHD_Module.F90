@@ -105,6 +105,7 @@ module mhd_module
         end function radiative_loss
         function Heat_equation(Jz) result(T_new)
             use Initial_var
+            implicit none
             real, intent(in) :: Jz(:,:)
 
             real, allocatable  :: T_new(:,:)
