@@ -16,6 +16,7 @@ program mhd_solver
     real(kind=8) :: Jz(Nx, Ny)                       ! Current density
     real(kind=8) :: u_new(Nx, Ny), v_new(Nx, Ny)     ! Updated velocity components
     real(kind=8) :: Bx_new(Nx, Ny), By_new(Nx, Ny)   ! Updated magnetic field components
+    real(kind=8) :: T_new(Nx, Ny)                    ! Updated tempeture
  
     integer :: n                                      ! Time step counter
 
@@ -42,6 +43,9 @@ program mhd_solver
 
         ! Update velocity field (momentum equation)
         call update_velocity(u, v, Jz, Bx, By, p, u_new, v_new, dx, dy, dt, Re)
+        
+        ! Update Tempeture 
+        call Heat_Transport(T(:,:), T_new(:,:), p(:,:), Ab(:,:), J_z(:,:), dx, dy, dt, ny, nx kappa, Bx(:,:), By(:,:), eta, sigma)
 
         ! Update magnetic field (induction equation)
         call update_magnetic_field(Bx, By, u, v, Bx_new, By_new, dx, dy, dt, Rm)
@@ -54,7 +58,7 @@ program mhd_solver
         v = v_new
         Bx = Bx_new
         By = By_new
-
+        T = T_new
         ! Output progress
         if (mod(n, 100) == 0) then
             print *, "Time step:", n
