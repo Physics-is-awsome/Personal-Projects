@@ -101,8 +101,9 @@ module mhd_module
             real :: loss
             loss = -sigma * T(i,j)**4   ! Optically thin approximation
         end function radiative_loss
-        function Heat_equation(T) result(T_new)
-            real, intent(in) :: T(:,:)
+        function Heat_equation(T, Jz) result(T_new)
+            use Initial_var
+            real, intent(in) :: T(:,:), Jz
             real, allocatable  :: T_new(:,:)
             integer i, j
             allocate(T_new(nx, ny))
