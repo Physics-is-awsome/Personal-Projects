@@ -103,7 +103,7 @@ module mhd_module
         end function radiative_loss
         function Heat_equation(T) result(T_new)
             real, intent(in) :: T(:,:)
-            real, intent(out) :: T_new(:,:)
+            integer i, j
 
         
             ! Update interior points to compute new temperature T
