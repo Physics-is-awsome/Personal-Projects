@@ -10,7 +10,7 @@ Module Initial_var
   real(kind=8), parameter :: sigma = 1.0d-21              ! Sigma or...
   contains 
     subroutine velocity_fields(u, v, Bx, By, p)
-        real(kind=8), intent(out) :: u(:,:), v(:,:), Bx(:,:), By(:,:), p(:,:)
+        real(kind=8), intent(out) :: u(:,:), v(:,:), By(:,:), Bx(:,:), p(:,:)
         integer :: i, j
 
         do i = 1, size(u, 1)
