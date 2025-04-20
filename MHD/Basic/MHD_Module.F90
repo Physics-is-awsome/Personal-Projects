@@ -89,9 +89,9 @@ module mhd_module
         function ohmic_heating(Jz, eta) result(Q)
             real, intent(in) :: Jz(:,:), eta
             real, allocatable :: Q(:,:)
-            real :: ax(Jz,1), ay(Jz,2)
 
-            allocate(Q(ax, ay))
+
+            allocate(Q(nx, ny))
             Q = eta * Jz**2
         end function ohmic_heating
 
@@ -106,11 +106,11 @@ module mhd_module
         function Heat_equation(Jz) result(T_new)
             use Initial_var
             real, intent(in) :: Jz(:,:)
-            real :: ax(Jz,1), ay(Jz,2)
+
             real, allocatable  :: T_new(:,:)
             integer i, j
  
-            allocate(T_new(ax, ay))
+            allocate(T_new(nx, ny))
         
             ! Update interior points to compute new temperature T
             do i = 2, nx-1
