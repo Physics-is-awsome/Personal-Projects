@@ -103,6 +103,7 @@ module mhd_module
         end function radiative_loss
         function Heat_equation(T) result(T_new)
             real, intent(in) :: T(:,:)
+            real :: T_new(:,:)
             integer i, j
 
         
