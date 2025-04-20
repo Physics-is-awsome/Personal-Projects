@@ -89,6 +89,7 @@ module mhd_module
         function ohmic_heating(Jz, eta) result(Q)
             real, intent(in) :: Jz(:,:), eta
             real, allocatable :: Q(:,:)
+            real :: ax(:,:), ay(:,:)
             ax = size(Jz, 1)
             ay = size(Jz, 2)
             allocate(Q(ax, ay))
@@ -106,6 +107,7 @@ module mhd_module
         function Heat_equation(Jz) result(T_new)
             use Initial_var
             real, intent(in) :: Jz(:,:)
+            real :: ax(:,:), ay(:,:)
             real, allocatable  :: T_new(:,:)
             integer i, j
             ax = size(Jz, 1)
