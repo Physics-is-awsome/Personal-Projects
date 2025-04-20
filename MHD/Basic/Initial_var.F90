@@ -26,13 +26,13 @@ Module Initial_var
     ! Initialize fields for tempeture 
     subroutine heat_fields(T)
     real(kind=8), intent(out) :: T(:,:)
+    real(kind=8), intent(in) :: Lx, Ly
     integer :: i, j
       do i = 1, nx
         do j = 1, ny
           ! Initial temperature: Gaussian blob (actual temperature T)
           T(i,j) = exp(-((i*dx-0.5*Lx)**2 + (j*dy-0.5*Ly)**2)/(0.1**2))
-          ! Magnetic field: Vary Bx for non-zero Jz
-          Bx(i,j) = 0.1 * sin(2*3.14159*i*dx/Lx)
+
         end do
       end do
     end subroutine heat_fields
