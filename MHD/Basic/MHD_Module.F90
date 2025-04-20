@@ -88,8 +88,8 @@ module mhd_module
         ! Function to compute Ohmic heating using Jz
         function ohmic_heating(Jz, eta) result(Q)
             real, intent(in) :: Jz(:,:), eta
-            real :: Q(:,:)
-
+            real, allocatable :: Q(:,:)
+            allocate(Q(nx, ny))
             Q = eta * Jz**2
         end function ohmic_heating
 
@@ -103,9 +103,9 @@ module mhd_module
         end function radiative_loss
         function Heat_equation(T) result(T_new)
             real, intent(in) :: T(:,:)
-            real :: T_new(:,:)
+            real, allocatable  :: T_new(:,:)
             integer i, j
-
+            allocate(T_new(nx, ny))
         
             ! Update interior points to compute new temperature T
             do i = 2, nx-1
