@@ -116,8 +116,8 @@ module mhd_module
             do i = 2, nx-1
                 do j = 2, ny-1
                     T_new(i,j) = T(i,j) + dt * (kappa * laplacian(T, i, j, dx, dy) + &
-                                            ohmic_heating(Jz, eta) + &
-                                            radiative_loss(T, i, j, sigma))
+                                                            ohmic_heating(Jz, eta) + &
+                                                        radiative_loss(T, i, j, sigma))
                         ! Prevent negative temperatures
                     if (T_new(i,j) < 0.0) T_new(i,j) = 0.0
                 end do
