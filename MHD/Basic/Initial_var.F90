@@ -24,7 +24,7 @@ Module Initial_var
         end do
     end subroutine velocity_fields
     ! Initialize fields for tempeture 
-    subroutine heat_fields(T, eta, sigma)
+    subroutine heat_fields(T)
     real(kind=8), intent(out) :: T(:,:)
     integer :: i, j
       do i = 1, nx
