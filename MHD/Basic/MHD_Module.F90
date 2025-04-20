@@ -87,7 +87,7 @@ module mhd_module
 
         ! Function to compute Ohmic heating using Jz
         function ohmic_heating(Jz, eta) result(Q)
-            real, intent(in) :: Jz(:,:)
+            real, intent(in) :: Jz(:,:), eta
             real :: Q
 
             Q = eta * Jz**2
@@ -101,7 +101,7 @@ module mhd_module
             real :: loss
             loss = -sigma * T(i,j)**4   ! Optically thin approximation
         end function radiative_loss
-        function Heat_Transport
+        function Heat_equation
 
         
             ! Update interior points to compute new temperature T
@@ -114,6 +114,7 @@ module mhd_module
                     if (T_new(i,j) < 0.0) T_new(i,j) = 0.0
                 end do
             end do
+        end function Heat_equation
     end subroutine Heat_Transport
     !============================================================
     ! Subroutine: Update the magnetic field using the induction equation
