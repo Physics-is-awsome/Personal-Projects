@@ -101,7 +101,7 @@ module mhd_module
             real :: loss
             loss = -sigma * T(i,j)**4   ! Optically thin approximation
         end function radiative_loss
-        function Heat_equation(T, T_new)
+        function Heat_equation(T) result(T_new)
             real, intent(in) :: T(:,:)
             real, intent(out) :: T_new(:,:)
 
@@ -110,7 +110,7 @@ module mhd_module
             do i = 2, nx-1
                 do j = 2, ny-1
                     T_new(i,j) = T(i,j) + dt * (kappa * laplacian(T, i, j, dx, dy) + &
-                                            ohmic_heating(Bx, By, i, j, dx, dy, eta) + &
+                                            ohmic_heating(Jz, eta) + &
                                             radiative_loss(T, i, j, sigma))
                         ! Prevent negative temperatures
                     if (T_new(i,j) < 0.0) T_new(i,j) = 0.0
