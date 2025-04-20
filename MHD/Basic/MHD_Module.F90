@@ -88,7 +88,7 @@ module mhd_module
         ! Function to compute Ohmic heating using Jz
         function ohmic_heating(Jz, eta) result(Q)
             real, intent(in) :: Jz(:,:), eta
-            real :: Q
+            real :: Q(:,:)
 
             Q = eta * Jz**2
         end function ohmic_heating
@@ -102,7 +102,7 @@ module mhd_module
             loss = -sigma * T(i,j)**4   ! Optically thin approximation
         end function radiative_loss
         function Heat_equation(T) result(T_new)
-            real, intent(in) :: T(:,:)
+            real, intent(in) :: T(:,:), kappa
             integer i, j
 
         
