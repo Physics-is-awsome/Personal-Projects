@@ -104,7 +104,7 @@ module mhd_module
     
     subroutine Heat_equation(Jz, T, T_new) 
         real, intent(in) :: Jz(:,:), T(:,:)
-
+        use Initial_var
         real, allocatable  :: T_new(:,:)
         integer i, j
  
