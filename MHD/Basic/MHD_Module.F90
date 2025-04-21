@@ -106,10 +106,10 @@ module mhd_module
         use Initial_var
         real, intent(in) :: Jz(:,:)
 
-        real, allocatable  :: T_new(:,:)
+        real, intent(out)  :: T_new(:,:)
         integer i, j
  
-        allocate(T_new(nx, ny))
+
         
         ! Update interior points to compute new temperature T
         do i = 2, nx-1
