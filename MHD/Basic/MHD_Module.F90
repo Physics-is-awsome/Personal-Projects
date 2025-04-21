@@ -73,12 +73,13 @@ module mhd_module
     !===========================================================
     
 
+ 
+
 
     ! Function to compute Laplacian using central finite differences
-    function laplacian(i, j, dx, dy) result(lap)
-        use Initial_var
+    function laplacian(T, i, j, dx, dy) result(lap)
         implicit none
-
+        real(kind=8), intent(in) :: T(:,:)  ! Temperature field
         integer, intent(in) :: i, j  ! Grid indices
         real(kind=8), intent(in) :: dx, dy  ! Grid spacings
         real(kind=8) :: lap
@@ -88,7 +89,6 @@ module mhd_module
 
     ! Function to compute Ohmic heating using Jz
     function ohmic_heating(Jz, eta) result(Q)
-        use Initial_var
         implicit none
         real(kind=8), intent(in) :: Jz(:,:), eta
         real(kind=8), allocatable :: Q(:,:)
@@ -97,8 +97,9 @@ module mhd_module
     end function ohmic_heating
 
     ! Function to compute radiative loss
-    function radiative_loss( i, j, sigma) result(loss)
+    function radiative_loss(T, i, j, sigma) result(loss)
         implicit none
+        real(kind=8), intent(in) :: T(:,:)  ! Temperature field
         integer, intent(in) :: i, j
         real(kind=8), intent(in) :: sigma   ! Radiative loss coefficient
         real(kind=8) :: loss
@@ -124,7 +125,7 @@ module mhd_module
         ! Update interior points to compute new temperature T_new
         do i = 2, nx-1
             do j = 2, ny-1
-                T_new(i,j) = T(i,j) + dt * ( kappa * laplacian(i, j, dx, dy) + Q(i,j) + radiative_loss(i, j, sigma))
+                T_new(i,j) = T(i,j) + dt * ( kappa * laplacian(T, i, j, dx, dy) + Q(i,j) + radiative_loss(T, i, j, sigma))
                 ! Prevent negative temperatures
                 if (T_new(i,j) < 0.0) T_new(i,j) = 0.0
             end do
