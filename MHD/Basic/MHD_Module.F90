@@ -95,9 +95,8 @@ module mhd_module
     end function ohmic_heating
 
     ! Function to compute radiative loss
-    function radiative_loss(T, i, j, sigma) result(loss)
+    function radiative_loss( i, j, sigma) result(loss)
         implicit none
-        real(kind=8), intent(in) :: T(:,:)  ! Temperature field
         integer, intent(in) :: i, j
         real(kind=8), intent(in) :: sigma   ! Radiative loss coefficient
         real(kind=8) :: loss
