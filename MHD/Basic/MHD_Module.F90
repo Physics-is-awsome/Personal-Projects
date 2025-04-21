@@ -71,60 +71,59 @@ module mhd_module
     !============================================================
     ! Update Heat transport 
     !===========================================================
-    subroutine Heat_Transport()
+    
 
-
-        contains
         ! Function to compute Laplacian using central finite differences
-        function laplacian(T, i, j, dx, dy) result(lap)
-            real, intent(in) :: T(:,:)  ! Temperature field
-            integer, intent(in) :: i, j  ! Grid indices
-            real, intent(in) :: dx, dy  ! Grid spacings
-            real :: lap
-            lap = (T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
+    function laplacian(T, i, j, dx, dy) result(lap)
+        real, intent(in) :: T(:,:)  ! Temperature field
+        integer, intent(in) :: i, j  ! Grid indices
+        real, intent(in) :: dx, dy  ! Grid spacings
+        real :: lap
+        lap = (T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
                 (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2
-        end function laplacian
+    end function laplacian
 
-        ! Function to compute Ohmic heating using Jz
-        function ohmic_heating(Jz, eta) result(Q)
-            real, intent(in) :: Jz(:,:), eta
-            real, allocatable :: Q(:,:)
+    ! Function to compute Ohmic heating using Jz
+    function ohmic_heating(Jz, eta) result(Q)
+        real, intent(in) :: Jz(:,:), eta
+        real, allocatable :: Q(:,:)
 
 
-            allocate(Q(nx, ny))
-            Q = eta * Jz**2
-        end function ohmic_heating
+        allocate(Q(nx, ny))
+        Q = eta * Jz**2
+    end function ohmic_heating
 
-        ! Function to compute radiative loss
-        function radiative_loss(T, i, j, sigma) result(loss)
-            real, intent(in) :: T(:,:)  ! Temperature field
-            integer, intent(in) :: i, j
-            real, intent(in) :: sigma   ! Radiative loss coefficient
-            real :: loss
-            loss = -sigma * T(i,j)**4   ! Optically thin approximation
-        end function radiative_loss
-        function Heat_equation(Jz) result(T_new)
-            use Initial_var
-            implicit none
-            real, intent(in) :: Jz(:,:)
+    ! Function to compute radiative loss
+    function radiative_loss(T, i, j, sigma) result(loss)
+        real, intent(in) :: T(:,:)  ! Temperature field
+        integer, intent(in) :: i, j
+        real, intent(in) :: sigma   ! Radiative loss coefficient
+        real :: loss
+        loss = -sigma * T(i,j)**4   ! Optically thin approximation
+    end function radiative_loss
+    
+    subroutine Heat_equation(Jz) result(T_new)
+        use Initial_var
+        implicit none
+        real, intent(in) :: Jz(:,:)
 
-            real, allocatable  :: T_new(:,:)
-            integer i, j
+        real, allocatable  :: T_new(:,:)
+        integer i, j
  
-            allocate(T_new(nx, ny))
+        allocate(T_new(nx, ny))
         
-            ! Update interior points to compute new temperature T
-            do i = 2, nx-1
-                do j = 2, ny-1
-                    T_new(i,j) = T(i,j) + dt * (kappa * laplacian(T, i, j, dx, dy) + &
-                                                            ohmic_heating(Jz, eta) + &
+        ! Update interior points to compute new temperature T
+        do i = 2, nx-1
+            do j = 2, ny-1
+                T_new(i,j) = T(i,j) + dt * (kappa * laplacian(T, i, j, dx, dy) + &
+                                                        ohmic_heating(Jz, eta) + &
                                                         radiative_loss(T, i, j, sigma))
-                        ! Prevent negative temperatures
-                    if (T_new(i,j) < 0.0) T_new(i,j) = 0.0
-                end do
+                    ! Prevent negative temperatures
+                if (T_new(i,j) < 0.0) T_new(i,j) = 0.0
             end do
-        end function Heat_equation
-    end subroutine Heat_Transport
+        end do
+    end function Heat_equation
+
     !============================================================
     ! Subroutine: Update the magnetic field using the induction equation
     !============================================================
