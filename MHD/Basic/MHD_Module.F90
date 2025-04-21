@@ -73,54 +73,66 @@ module mhd_module
     !===========================================================
     
 
-        ! Function to compute Laplacian using central finite differences
+
+    ! Function to compute Laplacian using central finite differences
     function laplacian(T, i, j, dx, dy) result(lap)
+        implicit none
         real, intent(in) :: T(:,:)  ! Temperature field
         integer, intent(in) :: i, j  ! Grid indices
         real, intent(in) :: dx, dy  ! Grid spacings
         real :: lap
         lap = (T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
-                (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2
+              (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2
     end function laplacian
 
     ! Function to compute Ohmic heating using Jz
     function ohmic_heating(Jz, eta) result(Q)
+        implicit none
         real, intent(in) :: Jz(:,:), eta
         real, allocatable :: Q(:,:)
-
-
-        allocate(Q(nx, ny))
+        allocate(Q(size(Jz,1), size(Jz,2)))
         Q = eta * Jz**2
     end function ohmic_heating
 
     ! Function to compute radiative loss
     function radiative_loss(T, i, j, sigma) result(loss)
+        implicit none
         real, intent(in) :: T(:,:)  ! Temperature field
         integer, intent(in) :: i, j
         real, intent(in) :: sigma   ! Radiative loss coefficient
         real :: loss
         loss = -sigma * T(i,j)**4   ! Optically thin approximation
     end function radiative_loss
-    
-    subroutine Heat_equation(Jz, T_new)
+
+    subroutine Heat_equation(Jz, T, T_new)
         use Initial_var
+        implicit none
         real, intent(in) :: Jz(:,:)
+        real, intent(in) :: T(:,:)      ! Input temperature field
+        real, intent(out) :: T_new(:,:) ! Output temperature field
+        real, allocatable :: Q(:,:)     ! Ohmic heating term
+        integer :: i, j
 
-        real, intent(out)  :: T_new(:,:)
-        integer i, j
- 
+        ! Allocate Q for ohmic heating
+        allocate(Q(nx, ny))
+        Q = ohmic_heating(Jz, eta)
 
-        
-        ! Update interior points to compute new temperature T
+        ! Initialize T_new (e.g., copy T or set boundary conditions)
+        T_new = T  ! Copy input to output as a starting point
+
+        ! Update interior points to compute new temperature T_new
         do i = 2, nx-1
             do j = 2, ny-1
                 T_new(i,j) = T(i,j) + dt * (kappa * laplacian(T, i, j, dx, dy) + &
-                                                        ohmic_heating(Jz, eta) + &
-                                                        radiative_loss(T, i, j, sigma))
-                    ! Prevent negative temperatures
+                                            Q(i,j) + &
+                                            radiative_loss(T, i, j, sigma))
+                ! Prevent negative temperatures
                 if (T_new(i,j) < 0.0) T_new(i,j) = 0.0
             end do
         end do
+
+        ! Deallocate Q
+        deallocate(Q)
     end subroutine Heat_equation
 
     !============================================================
