@@ -88,7 +88,7 @@ module mhd_module
     ! Function to compute Ohmic heating using Jz
     function ohmic_heating(Jz, eta) result(Q)
         implicit none
-        real, intent(in) :: Jz(:,:), eta
+        real(kind=8), intent(in) :: Jz(:,:), eta
         real, allocatable :: Q(:,:)
         allocate(Q(size(Jz,1), size(Jz,2)))
         Q = eta * Jz**2
@@ -104,11 +104,11 @@ module mhd_module
         loss = -sigma * T(i,j)**4   ! Optically thin approximation
     end function radiative_loss
 
-    subroutine Heat_equation(Jz, T, T_new)
+    subroutine Heat_equation(Jz, T_new)
         use Initial_var
         implicit none
         real, intent(in) :: Jz(:,:)
-        real, intent(in) :: T(:,:)      ! Input temperature field
+
         real, intent(out) :: T_new(:,:) ! Output temperature field
         real, allocatable :: Q(:,:)     ! Ohmic heating term
         integer :: i, j
