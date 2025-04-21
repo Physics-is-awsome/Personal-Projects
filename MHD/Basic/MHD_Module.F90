@@ -122,7 +122,7 @@ module mhd_module
                 if (T_new(i,j) < 0.0) T_new(i,j) = 0.0
             end do
         end do
-    end function Heat_equation
+    end subroutine Heat_equation
 
     !============================================================
     ! Subroutine: Update the magnetic field using the induction equation
