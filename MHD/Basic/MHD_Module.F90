@@ -107,7 +107,7 @@ module mhd_module
     subroutine Heat_equation(Jz, T_new)
         use Initial_var
         implicit none
-        real, intent(in) :: Jz(:,:)
+        real(kind=8), intent(in) :: Jz(:,:)
 
         real, intent(out) :: T_new(:,:) ! Output temperature field
         real, allocatable :: Q(:,:)     ! Ohmic heating term
