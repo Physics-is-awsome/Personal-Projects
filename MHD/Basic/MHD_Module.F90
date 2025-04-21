@@ -77,10 +77,10 @@ module mhd_module
     ! Function to compute Laplacian using central finite differences
     function laplacian(T, i, j, dx, dy) result(lap)
         implicit none
-        real, intent(in) :: T(:,:)  ! Temperature field
+        real(kind=8), intent(in) :: T(:,:)  ! Temperature field
         integer, intent(in) :: i, j  ! Grid indices
-        real, intent(in) :: dx, dy  ! Grid spacings
-        real :: lap
+        real(kind=8), intent(in) :: dx, dy  ! Grid spacings
+        real(kind=8) :: lap
         lap = (T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
               (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2
     end function laplacian
@@ -89,7 +89,7 @@ module mhd_module
     function ohmic_heating(Jz, eta) result(Q)
         implicit none
         real(kind=8), intent(in) :: Jz(:,:), eta
-        real, allocatable :: Q(:,:)
+        real(kind=8), allocatable :: Q(:,:)
         allocate(Q(size(Jz,1), size(Jz,2)))
         Q = eta * Jz**2
     end function ohmic_heating
@@ -97,10 +97,10 @@ module mhd_module
     ! Function to compute radiative loss
     function radiative_loss(T, i, j, sigma) result(loss)
         implicit none
-        real, intent(in) :: T(:,:)  ! Temperature field
+        real(kind=8), intent(in) :: T(:,:)  ! Temperature field
         integer, intent(in) :: i, j
-        real, intent(in) :: sigma   ! Radiative loss coefficient
-        real :: loss
+        real(kind=8), intent(in) :: sigma   ! Radiative loss coefficient
+        real(kind=8) :: loss
         loss = -sigma * T(i,j)**4   ! Optically thin approximation
     end function radiative_loss
 
@@ -109,8 +109,8 @@ module mhd_module
         implicit none
         real(kind=8), intent(in) :: Jz(:,:)
 
-        real, intent(out) :: T_new(:,:) ! Output temperature field
-        real, allocatable :: Q(:,:)     ! Ohmic heating term
+        real(kind=8), intent(out) :: T_new(:,:) ! Output temperature field
+        real(kind=8), allocatable :: Q(:,:)     ! Ohmic heating term
         integer :: i, j
 
         ! Allocate Q for ohmic heating
