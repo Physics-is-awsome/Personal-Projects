@@ -72,11 +72,11 @@ module mhd_module
     ! Update Heat transport 
     !===========================================================
     ! Compute Laplacian using central finite differences
-    subroutine compute_laplacian(T, lap, i, j, dx, dy)
+    subroutine compute_laplacian( lap, i, j, dx, dy)
         implicit none
-        real, intent(in) :: T(:,:), dx, dy
+        real(kind=8), intent(in) :: dx, dy
         integer, intent(in) :: i, j
-        real, intent(out) :: lap
+        real(kind=8), intent(out) :: lap
         lap = (T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
           (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2
     end subroutine compute_laplacian
@@ -84,28 +84,27 @@ module mhd_module
     ! Compute Ohmic heating for the entire grid
     subroutine compute_ohmic_heating(Jz, eta, Q)
         implicit none
-        real, intent(in) :: Jz(:,:), eta
-        real, intent(out) :: Q(:,:)
+        real(kind=8), intent(in) :: Jz(:,:), eta
+        real(kind=8), intent(out) :: Q(:,:)
         Q = eta * Jz**2
     end subroutine compute_ohmic_heating
 
     ! Compute radiative loss at a specific point
-    subroutine compute_radiative_loss(T, i, j, sigma, loss)
+    subroutine compute_radiative_loss(i, j, sigma, loss)
         implicit none
-        real, intent(in) :: T(:,:), sigma
+        real(kind=8), intent(in) :: sigma
         integer, intent(in) :: i, j
-        real, intent(out) :: loss
+        real(kind=8), intent(out) :: loss
         loss = -sigma * T(i,j)**4
     end subroutine compute_radiative_loss
 
     ! Solve the heat equation
-    subroutine Heat_equation(Jz, T, T_new)
+    subroutine Heat_equation(Jz, T_new)
         use Initial_var
         implicit none
-        real, intent(in) :: Jz(:,:)
-        real, intent(in) :: T(:,:)
-        real, intent(out) :: T_new(:,:)
-        real, allocatable :: Q(:,:)
+        real(kind=8), intent(in) :: Jz(:,:)
+        real(kind=8), intent(out) :: T_new(:,:)
+        real(kind=8), allocatable :: Q(:,:)
         integer :: i, j
         real :: lap_term, heat_term, rad_term
 
