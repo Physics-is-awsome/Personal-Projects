@@ -5,7 +5,7 @@ Module Initial_var
   real(kind=8), parameter :: Lx = 1.0, Ly = 1.0, dt = 0.001   !Domain size and tme step size
   real(kind=8), parameter :: Re = 100.0, Rm = 100.0   !Reynold numbers and magnetic reynold numbers
   real(kind=8), parameter :: dx = Lx / Nx, dy = Ly / Ny   !Grid spacing
-  real(kind=8), allocatable :: T = (:,:)                       ! Initial Tempeture
+  real(kind=8), allocatable :: T(:,:)                       ! Initial Tempeture
   real(kind=8), parameter :: eta = 0.001                  !Eta, or ...
   real(kind=8), parameter :: sigma = 1.0d-21              ! Sigma or...
   contains 
