@@ -91,7 +91,7 @@ module mhd_module
     end subroutine compute_ohmic_heating
 
     ! Compute radiative loss at a specific point
-    subroutine compute_radiative_loss(i, j loss)
+    subroutine compute_radiative_loss(i, j, loss)
         use Initial_var
         implicit none
         integer, intent(in) :: i, j
