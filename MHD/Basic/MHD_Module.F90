@@ -76,7 +76,7 @@ module mhd_module
         use Initial_var
         implicit none
         integer, intent(in) :: i, j
-        real(kind=8), intent(out) :: lap
+        real(kind=8), intent(out) :: lap(:,:)
         do i = 2, nx-1
             do j = 2, ny-1
                 lap = ((T(i+1) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
