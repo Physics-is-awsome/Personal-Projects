@@ -72,10 +72,9 @@ module mhd_module
     ! Update Heat transport 
     !===========================================================
     ! Compute Laplacian using central finite differences
-    subroutine compute_laplacian(lap, i, j, dx, dy)
+    subroutine compute_laplacian(lap, i, j)
         use Initial_var
         implicit none
-        real(kind=8), intent(in) :: dx, dy
         integer, intent(in) :: i, j
         real(kind=8), intent(out) :: lap
         lap = (T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
@@ -83,17 +82,18 @@ module mhd_module
     end subroutine compute_laplacian
 
     ! Compute Ohmic heating for the entire grid
-    subroutine compute_ohmic_heating(Jz, eta, Q)
+    subroutine compute_ohmic_heating(Jz, Q)
+        use Initial_var
         implicit none
-        real(kind=8), intent(in) :: Jz(:,:), eta
+        real(kind=8), intent(in) :: Jz(:,:)
         real(kind=8), intent(out) :: Q(:,:)
         Q = eta * Jz**2
     end subroutine compute_ohmic_heating
 
     ! Compute radiative loss at a specific point
-    subroutine compute_radiative_loss(i, j, sigma, loss)
+    subroutine compute_radiative_loss(i, j loss)
+        use Initial_var
         implicit none
-        real(kind=8), intent(in) :: sigma
         integer, intent(in) :: i, j
         real(kind=8), intent(out) :: loss
         loss = -sigma * T(i,j)**4
@@ -114,15 +114,15 @@ module mhd_module
 
         ! Compute Ohmic heating for the entire grid
         allocate(Q(nx, ny))
-        call compute_ohmic_heating(Jz, eta, Q)
+        call compute_ohmic_heating(Jz, Q)
 
         ! Update interior points
         do i = 2, nx-1
             do j = 2, ny-1
                 ! Compute each term separately
-                call compute_laplacian(lap_term, i, j, dx, dy)
+                call compute_laplacian(lap_term, i, j)
                 heat_term = Q(i,j)
-                call compute_radiative_loss(i, j, sigma, rad_term)
+                call compute_radiative_loss(i, j, rad_term)
 
                 ! Update temperature
                 T_new(i,j) = T(i,j) + dt * (kappa * lap_term + heat_term + rad_term)
