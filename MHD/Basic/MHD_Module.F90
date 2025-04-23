@@ -106,7 +106,7 @@ module mhd_module
         real(kind=8), intent(out) :: T_new(:,:)
         real(kind=8), allocatable :: Q(:,:)
         integer :: i, j
-        real :: lap_term, heat_term, rad_term
+        real(kind=8) :: lap_term, heat_term, rad_term
 
         ! Initialize output array
         T_new = T
