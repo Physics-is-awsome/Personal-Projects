@@ -75,10 +75,10 @@ module mhd_module
     subroutine compute_laplacian(lap, i, j)
         use Initial_var
         implicit none
-        integer, intent(in) :: i, j
+        integer :: i, j
         real(kind=8), intent(out) :: lap(:,:)
-        do i = 2, nx-1
-            do j = 2, ny-1
+        do i = 2, nx
+            do j = 2, ny
                 lap = ((T(i+1) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
                         (T(i, j+1) - 2*T(i,j) + T(i,j-1)) / dy**2)
             end do
