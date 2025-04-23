@@ -72,13 +72,13 @@ module mhd_module
     ! Update Heat transport 
     !===========================================================
     ! Compute Laplacian using central finite differences
-    subroutine compute_laplacian( lap, i, j, dx, dy)
+    subroutine compute_laplacian(lap, i, j, dx, dy)
         implicit none
         real(kind=8), intent(in) :: dx, dy
         integer, intent(in) :: i, j
         real(kind=8), intent(out) :: lap
         lap = (T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
-          (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2
+                  (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2
     end subroutine compute_laplacian
 
     ! Compute Ohmic heating for the entire grid
