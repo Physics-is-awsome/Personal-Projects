@@ -119,9 +119,9 @@ module mhd_module
         do i = 2, nx-1
             do j = 2, ny-1
                 ! Compute each term separately
-                call compute_laplacian(T, lap_term, i, j, dx, dy)
+                call compute_laplacian(lap_term, i, j, dx, dy)
                 heat_term = Q(i,j)
-                call compute_radiative_loss(T, i, j, sigma, rad_term)
+                call compute_radiative_loss(i, j, sigma, rad_term)
 
                 ! Update temperature
                 T_new(i,j) = T(i,j) + dt * (kappa * lap_term + heat_term + rad_term)
