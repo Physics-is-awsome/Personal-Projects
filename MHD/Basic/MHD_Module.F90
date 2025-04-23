@@ -77,8 +77,7 @@ module mhd_module
         implicit none
         integer, intent(in) :: i, j
         real(kind=8), intent(out) :: lap
-        lap = (T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
-                  (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2
+        lap = (T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2
     end subroutine compute_laplacian
 
     ! Compute Ohmic heating for the entire grid
