@@ -73,6 +73,7 @@ module mhd_module
     !===========================================================
     ! Compute Laplacian using central finite differences
     subroutine compute_laplacian(lap, i, j, dx, dy)
+        use Initial_var
         implicit none
         real(kind=8), intent(in) :: dx, dy
         integer, intent(in) :: i, j
