@@ -98,9 +98,13 @@ module mhd_module
     subroutine compute_radiative_loss(i, j, loss)
         use Initial_var
         implicit none
-        integer, intent(in) :: i, j
-        real(kind=8), intent(out) :: loss
-        loss = -sigma * T(i,j)**4
+        integer :: i, j
+        real(kind=8), intent(out) :: loss(:,:)
+        do i=2, nx
+            do j = 2, ny
+                loss(:,:) = -sigma * T(i,j)**4
+            end do
+        end do
     end subroutine compute_radiative_loss
 
     ! Solve the heat equation
