@@ -8,6 +8,7 @@ Module Initial_var
   real(kind=8), allocatable :: T(:,:)                       ! Initial Tempeture
   real(kind=8), parameter :: eta = 0.001                  !Eta, or ...
   real(kind=8), parameter :: sigma = 1.0d-21              ! Sigma or...
+  real(kind=8), parameter :: Kappa = 1.0d+5                !Thermal conductivity 
   contains 
     subroutine velocity_fields(u, v, Bx, By, p)
         real(kind=8), intent(out) :: u(:,:), v(:,:), By(:,:), Bx(:,:), p(:,:)
