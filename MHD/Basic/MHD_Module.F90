@@ -79,7 +79,7 @@ module mhd_module
         real(kind=8), intent(out) :: lap(:,:)
         do i = 2, nx
             do j = 2, ny
-                lap = ((T(i+1) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
+                lap(i,j) = ((T(i+1) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
                         (T(i, j+1) - 2*T(i,j) + T(i,j-1)) / dy**2)
             end do
         end do
