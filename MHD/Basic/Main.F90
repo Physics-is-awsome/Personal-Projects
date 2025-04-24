@@ -45,7 +45,7 @@ program mhd_solver
         call update_velocity(u, v, Jz, Bx, By, p, u_new, v_new, dx, dy, dt, Re)
         
         ! Update Tempeture 
-        call Heat_Transport(T(:,:), T_new(:,:), p(:,:), Ab(:,:), J_z(:,:), dx, dy, dt, ny, nx kappa, Bx(:,:), By(:,:), eta, sigma)
+        call Heat_equation(Jz, T_new)
 
         ! Update magnetic field (induction equation)
         call update_magnetic_field(Bx, By, u, v, Bx_new, By_new, dx, dy, dt, Rm)
