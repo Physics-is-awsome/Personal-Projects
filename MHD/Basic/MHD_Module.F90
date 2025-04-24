@@ -75,21 +75,14 @@ module mhd_module
     subroutine compute_laplacian(lap)
         use Initial_var
         implicit none
-        real(kind=8), intent(out) :: lap(nx,ny)
+        real(kind=8), intent(out) :: lap
         integer :: i, j
     
         lap = 0.0d0  ! Initialize output array
-        do i = 2, nx-1
-            do j = 2, ny-1
-                lap(i,j) = ((T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
+
+        lap(i,j) = ((T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
                             (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2)
-            end do
-        end do
-        ! Boundary conditions: Zero Laplacian at boundaries (Dirichlet BCs assumed)
-        lap(1,:) = 0.0d0
-        lap(nx,:) = 0.0d0
-        lap(:,1) = 0.0d0
-        lap(:,ny) = 0.0d0
+
     end subroutine compute_laplacian
 
     ! Compute Ohmic heating for the entire grid
@@ -147,7 +140,7 @@ module mhd_module
         ! Update interior points
         do i = 2, nx-1
             do j = 2, ny-1
-                T_new(i,j) = T(i,j) + dt * (kappa * lap(i,j) + Q(i,j) + rad(i,j))
+                T_new(i,j) = T(i,j) + dt * (kappa * lap + Q(i,j) + rad(i,j))
                 ! Ensure non-negative temperature
                 if (T_new(i,j) < 0.0d0) T_new(i,j) = 0.0d0
             end do
