@@ -71,99 +71,44 @@ module mhd_module
     !============================================================
     ! Update Heat transport 
     !===========================================================
-    ! Compute Laplacian using central finite differences
-    subroutine compute_laplacian(lap)
+    subroutine solve_heat_equation(Jz, T_new)
         use Initial_var
         implicit none
-        real(kind=8), intent(out) :: lap
+        real(kind=8), intent(in) :: Jz(nx,ny)  ! Current density
+        real(kind=8), intent(out) :: T_new(nx,ny)  ! Updated temperature
         integer :: i, j
-        real(kind=8), intent(out) :: lap(nx,ny)
-
-        integer :: i, j
- 
-        real(kind=8), intent(out) :: lap(nx,ny)
-
-        integer :: i, j
- 
-        lap = 0.0d0  ! Initialize output array
-        do i = 2, nx-1
-            do j = 2, ny-1
-                lap(i,j) = ((T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
-                                 (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2)
-             end do
-         end do
-         ! Boundary conditions: Zero Laplacian at boundaries (Dirichlet BCs assumed)
-         lap(1,:) = 0.0d0
-         lap(nx,:) = 0.0d0
-         lap(:,1) = 0.0d0
-         lap(:,ny) = 0.0d0
-
-    end subroutine compute_laplacian
-
-    ! Compute Ohmic heating for the entire grid
-    subroutine compute_ohmic_heating(Jz, Q)
-        use Initial_var
-        implicit none
-        real(kind=8), intent(in) :: Jz(nx,ny)
-        real(kind=8), intent(out) :: Q(nx,ny)
-        Q = eta * Jz**2
-    end subroutine compute_ohmic_heating
-
-    ! Compute radiative loss for the entire grid
-    subroutine compute_radiative_loss(loss)
-        use Initial_var
-        implicit none
-        real(kind=8), intent(out) :: loss
-        integer :: i, j
-        loss = 0.0d0  ! Initialize output array
-
-        loss = -sigma * T(i,j)**4
-
-
-    end subroutine compute_radiative_loss
-
-    ! Solve the heat equation
-    subroutine Heat_equation(Jz, T_new)
-        use Initial_var
-        implicit none
-        real(kind=8), intent(in) :: Jz(nx,ny)
-        real(kind=8), intent(out) :: T_new(nx,ny)
-        real(kind=8), allocatable :: Q(:,:), lap(:,:), rad
-        integer :: i, j
+        real(kind=8) :: lap, Q, rad  ! Temporary variables for Laplacian, Ohmic heating, radiative loss
 
         ! Initialize output array
         T_new = T
 
-        ! Allocate temporary arrays
-        allocate(Q(nx, ny), lap(nx, ny), rad(nx, ny))
-
-        ! Compute Ohmic heating
-        call compute_ohmic_heating(Jz, Q)
-
-        ! Compute Laplacian
-        call compute_laplacian(lap)
-
-        ! Compute radiative loss
-        call compute_radiative_loss(rad)
-
         ! Update interior points
         do i = 2, nx-1
             do j = 2, ny-1
-                T_new(i,j) = T(i,j) + dt * (kappa * lap + Q(i,j) + rad(i,j))
+                ! Compute Laplacian using central finite differences
+                lap = ((T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
+                       (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2)
+
+                ! Compute Ohmic heating
+                Q = eta * Jz(i,j)**2
+
+                ! Compute radiative loss
+                rad = -sigma * T(i,j)**4
+
+                ! Update temperature using explicit Euler
+                T_new(i,j) = T(i,j) + dt * (kappa * lap + Q + rad)
+
                 ! Ensure non-negative temperature
                 if (T_new(i,j) < 0.0d0) T_new(i,j) = 0.0d0
             end do
         end do
 
-        ! Apply boundary conditions (e.g., fixed temperature at boundaries)
+        ! Apply boundary conditions (Dirichlet: fixed temperature at boundaries)
         T_new(1,:) = T(1,:)
         T_new(nx,:) = T(nx,:)
         T_new(:,1) = T(:,1)
         T_new(:,ny) = T(:,ny)
-
-        ! Clean up
-        deallocate(Q, lap, rad)
-    end subroutine Heat_equation
+    end subroutine solve_heat_equation
 
     !============================================================
     ! Subroutine: Update the magnetic field using the induction equation
