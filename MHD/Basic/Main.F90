@@ -28,7 +28,7 @@ program mhd_solver
     !============================================================
     ! Initialize fields
     !============================================================
-    call initialize_fields(u, v, Bx, By, p)
+    call velocity_fields(u, v, Bx, By, p)
 
     ! Initialize HDF5 library
     call h5open_f(error)
