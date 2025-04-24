@@ -17,7 +17,6 @@ program mhd_solver
     real(kind=8) :: u_new(Nx, Ny), v_new(Nx, Ny)     ! Updated velocity components
     real(kind=8) :: Bx_new(Nx, Ny), By_new(Nx, Ny)   ! Updated magnetic field components
     real(kind=8) :: T_new(Nx, Ny)                    ! Updated tempeture
-     real(kind=8) :: T(Nx, Ny)                        !  tempeture
     integer :: n                                      ! Time step counter
 
     ! HDF5 variables
