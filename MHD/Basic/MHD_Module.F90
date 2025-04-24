@@ -77,11 +77,26 @@ module mhd_module
         implicit none
         real(kind=8), intent(out) :: lap
         integer :: i, j
-    
-        lap = 0.0d0  ! Initialize output array
+        real(kind=8), intent(out) :: lap(nx,ny)
 
-        lap(i,j) = ((T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
-                            (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2)
+        integer :: i, j
+ 
+        real(kind=8), intent(out) :: lap(nx,ny)
+
+        integer :: i, j
+ 
+        lap = 0.0d0  ! Initialize output array
+        do i = 2, nx-1
+            do j = 2, ny-1
+                lap(i,j) = ((T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
+                                 (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2)
+             end do
+         end do
+         ! Boundary conditions: Zero Laplacian at boundaries (Dirichlet BCs assumed)
+         lap(1,:) = 0.0d0
+         lap(nx,:) = 0.0d0
+         lap(:,1) = 0.0d0
+         lap(:,ny) = 0.0d0
 
     end subroutine compute_laplacian
 
@@ -98,19 +113,13 @@ module mhd_module
     subroutine compute_radiative_loss(loss)
         use Initial_var
         implicit none
-        real(kind=8), intent(out) :: loss(nx,ny)
+        real(kind=8), intent(out) :: loss
         integer :: i, j
         loss = 0.0d0  ! Initialize output array
-        do i = 2, nx-1
-            do j = 2, ny-1
-                loss(i,j) = -sigma * T(i,j)**4
-            end do
-        end do
-        ! Boundary conditions: Zero radiative loss at boundaries
-        loss(1,:) = 0.0d0
-        loss(nx,:) = 0.0d0
-        loss(:,1) = 0.0d0
-        loss(:,ny) = 0.0d0
+
+        loss = -sigma * T(i,j)**4
+
+
     end subroutine compute_radiative_loss
 
     ! Solve the heat equation
@@ -119,7 +128,7 @@ module mhd_module
         implicit none
         real(kind=8), intent(in) :: Jz(nx,ny)
         real(kind=8), intent(out) :: T_new(nx,ny)
-        real(kind=8), allocatable :: Q(:,:), lap(:,:), rad(:,:)
+        real(kind=8), allocatable :: Q(:,:), lap(:,:), rad
         integer :: i, j
 
         ! Initialize output array
