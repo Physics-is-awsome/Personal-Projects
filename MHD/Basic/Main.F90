@@ -29,6 +29,8 @@ program mhd_solver
     !============================================================
     call velocity_fields(u, v, Bx, By, p)
 
+    call heat_fields(T, Lx, Ly)
+
     ! Initialize HDF5 library
     call h5open_f(error)
     if (error /= 0) stop "Failed to initialize HDF5 library"
