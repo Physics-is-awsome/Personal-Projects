@@ -10,6 +10,17 @@ Module Initial_var
   real(kind=8), parameter :: sigma = 1.0d-21              ! Sigma or...
   real(kind=8), parameter :: Kappa = 1.0d+5                !Thermal conductivity 
   contains 
+    subroutine initialize_variables
+          implicit none
+          integer :: stat
+          if (allocated(T)) deallocate(T)
+          allocate(T(Nx, Ny), stat=stat)
+          if (stat /= 0) then
+              print *, "Error: Failed to allocate T"
+              stop
+          end if
+          T = 0.0d0  ! Initialize to zero before heat_fields
+    end subroutine initialize_variables
     subroutine velocity_fields(u, v, Bx, By, p)
         real(kind=8), intent(out) :: u(:,:), v(:,:), By(:,:), Bx(:,:), p(:,:)
         integer :: i, j
@@ -25,10 +36,24 @@ Module Initial_var
         end do
     end subroutine velocity_fields
     ! Initialize fields for tempeture 
-    subroutine heat_fields(T, Lx, Ly)
-    real(kind=8), intent(out) :: T(:,:)
-    real(kind=8), intent(in) :: Lx, Ly
-    integer :: i, j
+    subroutine heat_fields(Lx, Ly)
+      real(kind=8), intent(in) :: Lx, Ly
+      integer :: i, j
+      ! Check T allocation
+      if (.not. allocated(T)) then
+          print *, "Error: T is not allocated in heat_fields"
+          stop
+      end if
+      ! Check dimensions
+      if (size(T,1) /= Nx .or. size(T,2) /= Ny) then
+          print *, "Error: T has incorrect dimensions"
+          stop
+      end if
+      ! Check parameters
+      if (dx <= 0.0d0 .or. dy <= 0.0d0) then
+          print *, "Error: dx or dy invalid"
+          stop
+      end if
       do i = 1, nx
         do j = 1, ny
           ! Initial temperature: Gaussian blob (actual temperature T)
