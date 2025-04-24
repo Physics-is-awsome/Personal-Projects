@@ -17,6 +17,8 @@ program mhd_solver
     real(kind=8) :: u_new(Nx, Ny), v_new(Nx, Ny)     ! Updated velocity components
     real(kind=8) :: Bx_new(Nx, Ny), By_new(Nx, Ny)   ! Updated magnetic field components
     real(kind=8) :: T_new(Nx, Ny)                    ! Updated tempeture
+    real(kind=8), allocatable :: Jz(:,:), T_new(:,:)
+    integer :: stat
     integer :: n                                      ! Time step counter
 
     ! HDF5 variables
@@ -27,9 +29,12 @@ program mhd_solver
     !============================================================
     ! Initialize fields
     !============================================================
+    ! Initialize module variables
+    call initialize_variables
+
     call velocity_fields(u, v, Bx, By, p)
 
-    call heat_fields(T, Lx, Ly)
+    call heat_fields(Lx, Ly)
 
     ! Initialize HDF5 library
     call h5open_f(error)
