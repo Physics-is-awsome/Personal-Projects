@@ -57,7 +57,6 @@ program mhd_solver
         v = v_new
         Bx = Bx_new
         By = By_new
-        T = T_new
         ! Output progress
         if (mod(n, 100) == 0) then
             print *, "Time step:", n
