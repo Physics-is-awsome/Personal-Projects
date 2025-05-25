@@ -6,7 +6,7 @@ import os
 SLACK_TOKEN = os.getenv("SLACK_TOKEN", "your-slack-bot-token")
 client = WebClient(token=SLACK_TOKEN)
 
-def fetch_messages(channel_id, days=30):
+def fetch_messages(C0883QT1Y84, days=30):
     cutoff = (datetime.now() - timedelta(days=days)).timestamp()
     response = client.conversations_history(channel=channel_id, oldest=cutoff)
     messages = response["messages"]
