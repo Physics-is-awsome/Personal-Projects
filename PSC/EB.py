@@ -17,7 +17,7 @@ def fetch_messages(C0883QT1Y84, days=30):
         c.execute("SELECT COUNT(*) FROM messages WHERE timestamp = ?", (msg["ts"],))
         if c.fetchone()[0] == 0:
             c.execute("INSERT INTO messages VALUES (?, ?, ?, ?)",
-                      (msg["ts"], msg["user"], channel_id, msg.get("text", "")))
+                      (msg["ts"], msg["user"], C0883QT1Y84, msg.get("text", "")))
             # Update member message count and points
             c.execute("INSERT OR REPLACE INTO members (user_id, region, message_count, points) 
                        VALUES (?, 'Unknown', COALESCE((SELECT message_count FROM members WHERE user_id = ?), 0) + 1, 
