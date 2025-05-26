@@ -1,45 +1,67 @@
+```python
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+import glob
+import os
 
-# Load data
-data = np.loadtxt('fields_00500.dat')
-x = data[:, 0].reshape(64, 64)
-y = data[:, 1].reshape(64, 64)
-vx = data[:, 2].reshape(64, 64)
-vy = data[:, 3].reshape(64, 64)
-Bx = data[:, 4].reshape(64, 64)
-By = data[:, 5].reshape(64, 64)
+# Parameters
+nx, ny = 64, 64  # Grid size
+Lx, Ly = 2 * np.pi, 2 * np.pi  # Domain size
+dt = 0.005  # Time step from Fortran code
+output_interval = 50  # Steps between outputs
 
-# Plot
-plt.figure(figsize=(12, 10))
-plt.subplot(2, 2, 1)
-plt.contourf(x, y, vx, cmap='viridis')
-plt.colorbar(label='v_x')
-plt.title('Velocity v_x')
-plt.xlabel('x')
-plt.ylabel('y')
+# Find all field files
+files = sorted(glob.glob('fields_*.dat'), key=lambda x: int(x.split('_')[1].split('.')[0]))
 
-plt.subplot(2, 2, 2)
-plt.contourf(x, y, vy, cmap='viridis')
-plt.colorbar(label='v_y')
-plt.title('Velocity v_y')
-plt.xlabel('x')
-plt.ylabel('y')
+# Read one file to set up grid
+data = np.loadtxt(files[0])
+x = data[:, 0].reshape(nx, ny)
+y = data[:, 1].reshape(nx, ny)
 
-plt.subplot(2, 2, 3)
-plt.contourf(x, y, Bx, cmap='plasma')
-plt.colorbar(label='B_x')
-plt.title('Magnetic Field B_x')
-plt.xlabel('x')
-plt.ylabel('y')
+# Set up figure with 2x2 subplots
+fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+axes = axes.ravel()
+titles = ['Velocity v_x', 'Velocity v_y', 'Magnetic Field B_x', 'Magnetic Field B_y']
+cmaps = ['viridis', 'viridis', 'plasma', 'plasma']
 
-plt.subplot(2, 2, 4)
-plt.contourf(x, y, By, cmap='plasma')
-plt.colorbar(label='B_y')
-plt.title('Magnetic Field B_y')
-plt.xlabel('x')
-plt.ylabel('y')
+# Initialize contour plots
+contours = []
+for i, ax in enumerate(axes):
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_title(titles[i])
+    # Initialize with first frame
+    field = data[:, i+2].reshape(nx, ny)
+    cont = ax.contourf(x, y, field, cmap=cmaps[i], levels=20)
+    contours.append(cont)
+    fig.colorbar(cont, ax=ax)
 
-plt.tight_layout()
-plt.savefig('mhd_fields.png')
-plt.show()
+# Animation update function
+def update(frame):
+    # Read data for current frame
+    data = np.loadtxt(files[frame])
+    vx = data[:, 2].reshape(nx, ny)
+    vy = data[:, 3].reshape(nx, ny)
+    Bx = data[:, 4].reshape(nx, ny)
+    By = data[:, 5].reshape(nx, ny)
+    
+    # Update each contour plot
+    for i, cont in enumerate(contours):
+        for c in cont.collections:
+            c.remove()  # Clear previous contours
+        field = [vx, vy, Bx, By][i]
+        contours[i] = axes[i].contourf(x, y, field, cmap=cmaps[i], levels=20)
+    
+    # Update title with time
+    fig.suptitle(f'Time = {frame * output_interval * dt:.2f}')
+    return [c for cont in contours for c in cont.collections]
+
+# Create animation
+ani = FuncAnimation(fig, update, frames=len(files), interval=200, blit=True)
+
+# Save animation
+ani.save('mhd_animation.mp4', writer='ffmpeg', fps=10)
+plt.close()
+
+print("Animation saved as mhd_animation.mp4")
