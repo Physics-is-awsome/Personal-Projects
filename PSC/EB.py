@@ -74,6 +74,6 @@ def fetch_messages(channel_id, days=30):
 
 if __name__ == "__main__":
     init_db()
-    channel_id = "C0883QT1Y84"  # Replace with your channel ID
+    channel_id = "C08072JTL4A"  # Replace with your channel ID
     message_count, active_users = fetch_messages(channel_id)
     print(f"Fetched {message_count} messages, {len(active_users)} active users")
