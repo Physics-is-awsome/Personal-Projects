@@ -63,7 +63,7 @@ ani = FuncAnimation(fig, update, frames=len(files), interval=200, blit=True)
 
 # Save animation
 try:
-    ani.save('mhd_3d_slices.mp4', writer='ffmpeg', fps=10, dpi=100)
+    ani.save('mhd1_3d_slices.mp4', writer='ffmpeg', fps=10, dpi=100)
     print("Animation saved as mhd_3d_slices.mp4")
 except Exception as e:
     print(f"Error saving animation: {e}")
