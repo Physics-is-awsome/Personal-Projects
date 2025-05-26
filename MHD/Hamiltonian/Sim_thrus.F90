@@ -6,9 +6,9 @@ program mhd_thruster_3d
   real(8), parameter :: dt = 0.0002, t_max = 0.2 ! 0.2 seconds
   real(8), parameter :: rho = 1000.0 ! Fluid density (e.g., seawater, kg/m^3)
   real(8), parameter :: B0 = 0.5 ! External B-field (Tesla, along z)
-  real(8), parameter :: J0 = 1.0e4 ! Current density (A/m^2, along y)
-  real(8), parameter :: nu = 1.0e-6 ! Kinematic viscosity (m^2/s)
-  real(8), parameter :: eta = 1.0e-6 ! Magnetic diffusivity (m^2/s)
+  real(8), parameter :: J0 = 1.0e5 ! Current density (A/m^2, along y)
+  real(8), parameter :: nu = 1.0e-8 ! Kinematic viscosity (m^2/s)
+  real(8), parameter :: eta = 1.0e-8 ! Magnetic diffusivity (m^2/s)
   integer :: i, j, k, n, n_steps, output_interval = 30
   real(8), dimension(nx,ny,nz) :: vx, vy, vz, Bx, By, Bz
   real(8), dimension(nx,ny,nz) :: vx_tmp, vy_tmp, vz_tmp, Bx_tmp, By_tmp, Bz_tmp
