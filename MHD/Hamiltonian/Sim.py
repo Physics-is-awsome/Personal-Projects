@@ -44,9 +44,9 @@ def update(frame):
 ani = FuncAnimation(fig, update, frames=len(files), interval=200, blit=True)
 
 # Save
-save_path = '/mnt/c/Users/<YourUsername>/Desktop/mhd_thruster.mp4'  # Adjust path
+
 try:
-    ani.save(save_path, writer='ffmpeg', fps=5, dpi=100)
+    ani.save(Sim_thrus.mp4, writer='ffmpeg', fps=5, dpi=100)
     print(f"Animation saved to: {save_path}")
 except Exception as e:
     print(f"Error saving animation: {e}")
