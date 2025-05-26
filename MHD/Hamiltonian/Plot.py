@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
@@ -26,42 +25,33 @@ titles = ['Velocity v_x', 'Velocity v_y', 'Magnetic Field B_x', 'Magnetic Field 
 cmaps = ['viridis', 'viridis', 'plasma', 'plasma']
 
 # Initialize contour plots
-contours = []
+fields = [data[:, i+2].reshape(nx, ny) for i in range(4)]
+ims = []
 for i, ax in enumerate(axes):
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_title(titles[i])
-    # Initialize with first frame
-    field = data[:, i+2].reshape(nx, ny)
-    cont = ax.contourf(x, y, field, cmap=cmaps[i], levels=20)
-    contours.append(cont)
-    fig.colorbar(cont, ax=ax)
+    im = ax.imshow(fields[i], extent=[0, Lx, 0, Ly], cmap=cmaps[i], origin='lower', vmin=-0.2, vmax=0.2)
+    ims.append(im)
+    fig.colorbar(im, ax=ax)
 
 # Animation update function
 def update(frame):
-    # Read data for current frame
     data = np.loadtxt(files[frame])
-    vx = data[:, 2].reshape(nx, ny)
-    vy = data[:, 3].reshape(nx, ny)
-    Bx = data[:, 4].reshape(nx, ny)
-    By = data[:, 5].reshape(nx, ny)
-    
-    # Update each contour plot
-    for i, cont in enumerate(contours):
-        for c in cont.collections:
-            c.remove()  # Clear previous contours
-        field = [vx, vy, Bx, By][i]
-        contours[i] = axes[i].contourf(x, y, field, cmap=cmaps[i], levels=20)
-    
-    # Update title with time
+    for i in range(4):
+        field = data[:, i+2].reshape(nx, ny)
+        ims[i].set_array(field)
     fig.suptitle(f'Time = {frame * output_interval * dt:.2f}')
-    return [c for cont in contours for c in cont.collections]
+    return ims
 
 # Create animation
 ani = FuncAnimation(fig, update, frames=len(files), interval=200, blit=True)
 
 # Save animation
-ani.save('mhd_animation.mp4', writer='ffmpeg', fps=10)
+try:
+    ani.save('mhd_animation.mp4', writer='ffmpeg', fps=10, dpi=100)
+    print("Animation saved as mhd_animation.mp4")
+except Exception as e:
+    print(f"Error saving animation: {e}")
+    print("Ensure ffmpeg is installed and accessible.")
 plt.close()
-
-print("Animation saved as mhd_animation.mp4")
