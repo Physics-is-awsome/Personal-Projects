@@ -1,130 +1,146 @@
-! mhd_2d_fourier.f90
-module mhd_modules
-    use, intrinsic :: iso_c_binding
-    implicit none
+program mhd_hamiltonian_2d
+  implicit none
+  integer, parameter :: nx = 64, ny = 64
+  real(8), parameter :: Lx = 2.0*3.141592653589793, Ly = 2.0*3.141592653589793
+  real(8), parameter :: dx = Lx/nx, dy = Ly/ny
+  real(8), parameter :: dt = 0.005, t_max = 5.0
+  real(8), parameter :: rho = 1.0
+  integer :: i, j, step, n_steps
+  real(8), dimension(nx,ny) :: vx, vy, Bx, By
+  real(8), dimension(nx,ny) :: vx_half, vy_half, Bx_new, By_new
+  real(8) :: energy, t
+  character(len=20) :: filename
 
-    include 'fftw3.f03'  ! Try this first; if it fails, use manual definitions below
+  ! Initialize fields
+  call initialize_fields(vx, vy, Bx, By)
 
-    ! Manual definitions as fallback
-    integer(C_INT), parameter :: FFTW_FORWARD = -1
-    integer(C_INT), parameter :: FFTW_BACKWARD = 1
-    integer(C_INT), parameter :: FFTW_ESTIMATE = 64
+  ! Number of time steps
+  n_steps = int(t_max / dt)
 
-    ! Parameters
-    integer, parameter :: Nx = 64, Ny = 64
-    real(C_DOUBLE), parameter :: Lx = 1.0, Ly = 1.0, dt = 0.001, t_max = 1.0
-    real(C_DOUBLE), parameter :: cv = 1.0
+  ! Open file for energy diagnostics
+  open(unit=10, file='energy.dat', status='replace')
 
-    ! Arrays
-    complex(C_DOUBLE_COMPLEX), dimension(Nx, Ny) :: rho_k, u_k, v_k, Bx_k, By_k, s_k, H_k
-    real(C_DOUBLE), dimension(Nx, Ny) :: rho_x, u_x, v_x, Bx_x, By_x, s_x
-    type(C_PTR) :: plan_forward, plan_backward
+  ! Main time loop
+  t = 0.0
+  do step = 1, n_steps
+     ! Compute energy
+     energy = compute_energy(vx, vy, Bx, By)
+     write(10, *) t, energy
 
-    ! Wave numbers
-    real(C_DOUBLE), dimension(Nx) :: kx
-    real(C_DOUBLE), dimension(Ny) :: ky
+     ! Write fields every 50 steps
+     if (mod(step, 50) == 0) then
+        write(filename, '("fields_", i5.5, ".dat")') step
+        call write_fields(vx, vy, Bx, By, filename)
+     end if
+
+     ! Leapfrog step
+     call leapfrog_step(vx, vy, Bx, By, vx_half, vy_half, Bx_new, By_new)
+     vx = vx_half
+     vy = vy_half
+     Bx = Bx_new
+     By = By_new
+     t = t + dt
+  end do
+
+  close(10)
+  print *, 'Simulation complete. Energy data in energy.dat, fields in fields_*.dat'
 
 contains
 
-    subroutine initialize_simulation()
-        integer :: i, j
-
-        do i = 1, Nx
-            kx(i) = 2.0 * 3.14159265359 * (i - 1 - Nx/2) / Lx
-        end do
-        do j = 1, Ny
-            ky(j) = 2.0 * 3.14159265359 * (j - 1 - Ny/2) / Ly
-        end do
-
-        rho_x = 1.0 + 0.01 * sin(2.0 * 3.14159265359 * (kx(1:Nx) / Lx)) * cos(2.0 * 3.14159265359 * (ky(1:Ny) / Ly))
-        u_x = 0.1 * sin(2.0 * 3.14159265359 * (kx(1:Nx) / Lx))
-        v_x = 0.0
-        Bx_x = 0.1
-        By_x = 0.0
-        s_x = 0.0
-
-        plan_forward = fftw_plan_dft_2d(Nx, Ny, rho_x, rho_k, FFTW_FORWARD, FFTW_ESTIMATE)
-        plan_backward = fftw_plan_dft_2d(Nx, Ny, rho_k, rho_x, FFTW_BACKWARD, FFTW_ESTIMATE)
-
-        call fftw_execute_dft(plan_forward, rho_x, rho_k)
-        call fftw_execute_dft(plan_forward, u_x, u_k)
-        call fftw_execute_dft(plan_forward, v_x, v_k)
-        call fftw_execute_dft(plan_forward, Bx_x, Bx_k)
-        call fftw_execute_dft(plan_forward, By_x, By_k)
-        call fftw_execute_dft(plan_forward, s_x, s_k)
-
-        rho_k = rho_k / (Nx * Ny)
-        u_k = u_k / (Nx * Ny)
-        v_k = v_k / (Nx * Ny)
-        Bx_k = Bx_k / (Nx * Ny)
-        By_k = By_k / (Nx * Ny)
-        s_k = s_k / (Nx * Ny)
-
-    end subroutine
-
-    subroutine compute_hamiltonian()
-        integer :: i, j
-        complex(C_DOUBLE_COMPLEX) :: kinetic, internal, magnetic
-
-        H_k = 0.0
-
-        do i = 1, Nx
-            do j = 1, Ny
-                kinetic = 0.5 * rho_k(i,j) * (conjg(u_k(i,j))*u_k(i,j) + conjg(v_k(i,j))*v_k(i,j))
-                internal = rho_k(i,j) * s_k(i,j) * cv
-                magnetic = 0.5 * (conjg(Bx_k(i,j))*Bx_k(i,j) + conjg(By_k(i,j))*By_k(i,j))
-                H_k(i,j) = kinetic + internal + magnetic
-            end do
-        end do
-
-    end subroutine
-
-    subroutine evolve_step(t)
-        real(C_DOUBLE), intent(inout) :: t
-        complex(C_DOUBLE_COMPLEX), dimension(Nx, Ny) :: k1_rho, k2_rho, k3_rho, k4_rho
-
-        call compute_hamiltonian()
-
-        k1_rho = -0.1 * rho_k
-        k2_rho = -0.1 * (rho_k + 0.5*dt*k1_rho)
-        k3_rho = -0.1 * (rho_k + 0.5*dt*k2_rho)
-        k4_rho = -0.1 * (rho_k + dt*k3_rho)
-
-        rho_k = rho_k + (dt/6.0) * (k1_rho + 2.0*k2_rho + 2.0*k3_rho + k4_rho)
-
-        t = t + dt
-
-    end subroutine
-
-    subroutine save_fields(t)
-        real(C_DOUBLE), intent(in) :: t
-        open(unit=10, file='output.dat', status='unknown', position='append')
-        write(10,*) t, sum(abs(rho_k)), sum(abs(H_k))
-        close(10)
-    end subroutine
-
-    subroutine cleanup()
-        call fftw_destroy_plan(plan_forward)
-        call fftw_destroy_plan(plan_backward)
-        call fftw_cleanup()
-    end subroutine
-
-end module
-
-program mhd_2d_fourier
-    use mhd_modules
-
-    real(C_DOUBLE) :: t
-
-    call initialize_simulation()
-    t = 0.0
-
-    do while (t < t_max)
-        call evolve_step(t)
-        call save_fields(t)
-        if (mod(int(t/dt), 100) == 0) write(*,*) 'Time:', t
+  subroutine initialize_fields(vx, vy, Bx, By)
+    real(8), dimension(nx,ny), intent(out) :: vx, vy, Bx, By
+    integer :: i, j
+    real(8) :: x, y
+    do j = 1, ny
+       y = (j-1)*dy
+       do i = 1, nx
+          x = (i-1)*dx
+          vx(i,j) = 0.1 * sin(x) * cos(y)
+          vy(i,j) = 0.1 * cos(x) * sin(y)
+          Bx(i,j) = 0.1 * cos(x) * sin(y)
+          By(i,j) = -0.1 * sin(x) * cos(y)  ! Ensures div B = 0
+       end do
     end do
+  end subroutine initialize_fields
 
-    call cleanup()
+  function ddx(f) result(df)
+    real(8), dimension(nx,ny), intent(in) :: f
+    real(8), dimension(nx,ny) :: df
+    integer :: i, j, ip, im
+    do j = 1, ny
+       do i = 1, nx
+          ip = mod(i, nx) + 1
+          im = mod(i-2+nx, nx) + 1
+          df(i,j) = (f(ip,j) - f(im,j)) / (2.0*dx)
+       end do
+    end do
+  end function ddx
 
-end program
+  function ddy(f) result(df)
+    real(8), dimension(nx,ny), intent(in) :: f
+    real(8), dimension(nx,ny) :: df
+    integer :: i, j, jp, jm
+    do j = 1, ny
+       jm = mod(j-2+ny, ny) + 1
+       jp = mod(j, ny) + 1
+       do i = 1, nx
+          df(i,j) = (f(i,jp) - f(i,jm)) / (2.0*dy)
+       end do
+    end do
+  end function ddy
+
+  subroutine compute_derivatives(vx, vy, Bx, By, dvx_dt, dvy_dt, dBx_dt, dBy_dt)
+    real(8), dimension(nx,ny), intent(in) :: vx, vy, Bx, By
+    real(8), dimension(nx,ny), intent(out) :: dvx_dt, dvy_dt, dBx_dt, dBy_dt
+    real(8), dimension(nx,ny) :: tmp
+    ! dvx/dt = -(vx * d(vx)/dx + vy * d(vx)/dy) + (Bx * d(Bx)/dx + By * d(Bx)/dy)
+    dvx_dt = -vx * ddx(vx) - vy * ddy(vx) + (Bx * ddx(Bx) + By * ddy(Bx)) / rho
+    ! dvy/dt = -(vx * d(vy)/dx + vy * d(vy)/dy) + (Bx * d(By)/dx + By * d(By)/dy)
+    dvy_dt = -vx * ddx(vy) - vy * ddy(vy) + (Bx * ddx(By) + By * ddy(By)) / rho
+    ! dBx/dt = d(vy * Bx - vx * By)/dy
+    tmp = vy * Bx - vx * By
+    dBx_dt = ddy(tmp)
+    ! dBy/dt = -d(vy * Bx - vx * By)/dx
+    dBy_dt = -ddx(tmp)
+  end subroutine compute_derivatives
+
+  subroutine leapfrog_step(vx, vy, Bx, By, vx_new, vy_new, Bx_new, By_new)
+    real(8), dimension(nx,ny), intent(in) :: vx, vy, Bx, By
+    real(8), dimension(nx,ny), intent(out) :: vx_new, vy_new, Bx_new, By_new
+    real(8), dimension(nx,ny) :: dvx_dt, dvy_dt, dBx_dt, dBy_dt
+    ! Compute derivatives at current state
+    call compute_derivatives(vx, vy, Bx, By, dvx_dt, dvy_dt, dBx_dt, dBy_dt)
+    ! Half-step for velocity
+    vx_new = vx + 0.5 * dt * dvx_dt
+    vy_new = vy + 0.5 * dt * dvy_dt
+    ! Full step for magnetic field
+    Bx_new = Bx + dt * dBx_dt
+    By_new = By + dt * dBy_dt
+    ! Compute derivatives at half-step
+    call compute_derivatives(vx_new, vy_new, Bx_new, By_new, dvx_dt, dvy_dt, dBx_dt, dBy_dt)
+    ! Full step for velocity
+    vx_new = vx + dt * dvx_dt
+    vy_new = vy + dt * dvy_dt
+  end subroutine leapfrog_step
+
+  function compute_energy(vx, vy, Bx, By) result(energy)
+    real(8), dimension(nx,ny), intent(in) :: vx, vy, Bx, By
+    real(8) :: energy
+    energy = sum(0.5 * rho * (vx**2 + vy**2) + 0.5 * (Bx**2 + By**2)) * dx * dy
+  end function compute_energy
+
+  subroutine write_fields(vx, vy, Bx, By, filename)
+    real(8), dimension(nx,ny), intent(in) :: vx, vy, Bx, By
+    character(len=*), intent(in) :: filename
+    integer :: i, j
+    open(unit=11, file=filename, status='replace')
+    do j = 1, ny
+       do i = 1, nx
+          write(11, *) (i-1)*dx, (j-1)*dy, vx(i,j), vy(i,j), Bx(i,j), By(i,j)
+       end do
+       write(11, *)
+    end do
+    close(11)
+  end subroutine write_fields
+
+end program mhd_hamiltonian_2d
