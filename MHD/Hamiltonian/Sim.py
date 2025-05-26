@@ -47,7 +47,7 @@ ani = FuncAnimation(fig, update, frames=len(files), interval=200, blit=True)
 
 try:
     ani.save('mhd_sim_slices.mp4', writer='ffmpeg', fps=3, dpi=100)
-    print(f"Animation saved to: {save_path}")
+    print(f"Animation saved to: mhd_sim_slices.mp4")
 except Exception as e:
     print(f"Error saving animation: {e}")
     print("Ensure ffmpeg is installed: sudo apt-get install ffmpeg")
