@@ -1,9 +1,8 @@
 import matplotlib
+matplotlib.use('Agg')  # Non-interactive backend
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-
-matplotlib.use('Agg')
 import glob
 import os
 
@@ -16,9 +15,16 @@ slice_z = nz // 2  # Slice at z ≈ π (index 16)
 
 # Find all field files
 files = sorted(glob.glob('fields_*.dat'), key=lambda x: int(x.split('_')[1].split('.')[0]))
+if not files:
+    raise FileNotFoundError("No fields_*.dat files found in the current directory.")
 
 # Read one file to set up grid
-data = np.loadtxt(files[0], comments='#')
+try:
+    data = np.loadtxt(files[0], comments='#')
+except Exception as e:
+    raise IOError(f"Error reading {files[0]}: {e}")
+if data.shape[1] != 9:
+    raise ValueError("Unexpected data format in fields_*.dat files.")
 x = data[:, 0].reshape(nx, ny, nz)[:, :, slice_z]
 y = data[:, 1].reshape(nx, ny, nz)[:, :, slice_z]
 
@@ -41,22 +47,25 @@ for i, ax in enumerate(axes):
 
 # Animation update function
 def update(frame):
-    data = np.loadtxt(files[frame], comments='#')
-    for i in range(6):
-        field = data[:, i+3].reshape(nx, ny, nz)[:, :, slice_z]
-        ims[i].set_array(field)
-    fig.suptitle(f'Time = {frame * output_interval * dt:.2f}')
-    return ims
+    try:
+        data = np.loadtxt(files[frame], comments='#')
+        for i in range(6):
+            field = data[:, i+3].reshape(nx, ny, nz)[:, :, slice_z]
+            ims[i].set_array(field)
+        fig.suptitle(f'Time = {frame * output_interval * dt:.2f}')
+        return ims
+    except Exception as e:
+        print(f"Error processing {files[frame]}: {e}")
+        return ims
 
 # Create animation
 ani = FuncAnimation(fig, update, frames=len(files), interval=200, blit=True)
 
 # Save animation
 try:
-    plt.show()
     ani.save('mhd_3d_slices.mp4', writer='ffmpeg', fps=10, dpi=100)
     print("Animation saved as mhd_3d_slices.mp4")
 except Exception as e:
     print(f"Error saving animation: {e}")
-    print("Ensure ffmpeg is installed and accessible.")
-plt.close()
+    print("Ensure ffmpeg is installed and accessible (run 'ffmpeg -version').")
+plt.close(fig)  # Close figure explicitly after saving
