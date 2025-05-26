@@ -5,41 +5,42 @@ import glob
 import os
 
 # Parameters
-nx, ny = 64, 64  # Grid size
-Lx, Ly = 2 * np.pi, 2 * np.pi  # Domain size
-dt = 0.005  # Time step from Fortran code
-output_interval = 50  # Steps between outputs
+nx, ny, nz = 32, 32, 32  # Grid size
+Lx, Ly, Lz = 2 * np.pi, 2 * np.pi, 2 * np.pi  # Domain size
+dt = 0.002  # Time step from Fortran code
+output_interval = 100  # Steps between outputs
+slice_z = nz // 2  # Slice at z ≈ π (index 16)
 
 # Find all field files
 files = sorted(glob.glob('fields_*.dat'), key=lambda x: int(x.split('_')[1].split('.')[0]))
 
 # Read one file to set up grid
-data = np.loadtxt(files[0])
-x = data[:, 0].reshape(nx, ny)
-y = data[:, 1].reshape(nx, ny)
+data = np.loadtxt(files[0], comments='#')
+x = data[:, 0].reshape(nx, ny, nz)[:, :, slice_z]
+y = data[:, 1].reshape(nx, ny, nz)[:, :, slice_z]
 
-# Set up figure with 2x2 subplots
-fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+# Set up figure with 2x3 subplots for vx, vy, vz, Bx, By, Bz
+fig, axes = plt.subplots(2, 3, figsize=(15, 10))
 axes = axes.ravel()
-titles = ['Velocity v_x', 'Velocity v_y', 'Magnetic Field B_x', 'Magnetic Field B_y']
-cmaps = ['viridis', 'viridis', 'plasma', 'plasma']
+titles = ['Velocity v_x', 'Velocity v_y', 'Velocity v_z', 'Magnetic Field B_x', 'Magnetic Field B_y', 'Magnetic Field B_z']
+cmaps = ['viridis', 'viridis', 'viridis', 'plasma', 'plasma', 'plasma']
 
-# Initialize contour plots
-fields = [data[:, i+2].reshape(nx, ny) for i in range(4)]
+# Initialize plots
 ims = []
 for i, ax in enumerate(axes):
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_title(titles[i])
-    im = ax.imshow(fields[i], extent=[0, Lx, 0, Ly], cmap=cmaps[i], origin='lower', vmin=-0.2, vmax=0.2)
+    field = data[:, i+3].reshape(nx, ny, nz)[:, :, slice_z]
+    im = ax.imshow(field, extent=[0, Lx, 0, Ly], cmap=cmaps[i], origin='lower', vmin=-0.2, vmax=0.2)
     ims.append(im)
     fig.colorbar(im, ax=ax)
 
 # Animation update function
 def update(frame):
-    data = np.loadtxt(files[frame])
-    for i in range(4):
-        field = data[:, i+2].reshape(nx, ny)
+    data = np.loadtxt(files[frame], comments='#')
+    for i in range(6):
+        field = data[:, i+3].reshape(nx, ny, nz)[:, :, slice_z]
         ims[i].set_array(field)
     fig.suptitle(f'Time = {frame * output_interval * dt:.2f}')
     return ims
@@ -49,8 +50,9 @@ ani = FuncAnimation(fig, update, frames=len(files), interval=200, blit=True)
 
 # Save animation
 try:
-    ani.save('mhd_animation.mp4', writer='ffmpeg', fps=10, dpi=100)
-    print("Animation saved as mhd_animation.mp4")
+    plt.show()
+    ani.save('mhd_3d_slices.mp4', writer='ffmpeg', fps=10, dpi=100)
+    print("Animation saved as mhd_3d_slices.mp4")
 except Exception as e:
     print(f"Error saving animation: {e}")
     print("Ensure ffmpeg is installed and accessible.")
