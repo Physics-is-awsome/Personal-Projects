@@ -5,7 +5,7 @@ program planet_formation_no_merge_repulse
   real, parameter :: dt = 0.01   ! Time step
   real, parameter :: t_max = 10.0 ! Total simulation time
   real, parameter :: eps = 0.2  ! Softening length for gravity
-  real, parameter :: damp = 0.98 ! Velocity damping factor
+  real, parameter :: damp = 0.9 ! Velocity damping factor
   real, parameter :: coll_dist = 0.1 ! Distance for repulsive force
   real, parameter :: k_coll = 80.0 ! Repulsive force constant
   integer, parameter :: n_steps = int(t_max / dt)
