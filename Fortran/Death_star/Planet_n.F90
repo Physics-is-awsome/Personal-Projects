@@ -1,6 +1,6 @@
 program planet_formation_no_merge_repulse
   implicit none
-  integer, parameter :: n = 100  ! Number of particles
+  integer, parameter :: n = 1000  ! Number of particles
   real, parameter :: G = 1.0     ! Gravitational constant
   real, parameter :: dt = 0.01   ! Time step
   real, parameter :: t_max = 10.0 ! Total simulation time
