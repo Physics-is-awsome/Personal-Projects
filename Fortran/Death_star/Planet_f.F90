@@ -14,7 +14,7 @@ program sph_planet_formation
   real, parameter :: gamma = 5.0/3.0 ! Adiabatic index
   integer, parameter :: n_steps = int(t_max / dt)
   real :: x(n), y(n), vx(n), vy(n), mass(n), ax(n), ay(n), rho(n), P(n)
-  real :: r, w, dwdr, force, fx, fy, r_disk, v_circ
+  real :: r, w, dwdr, force, fx, fy, r_disk, v_circ, m
   real :: mu, v_dot_r, pi_term, visc_term
   integer :: i, j, step
   real :: t
@@ -26,7 +26,7 @@ program sph_planet_formation
   do i = 1, n
     call random_number(r_disk)
     call random_number(t)
-    call random_number(mass)
+    call random_number(m)
     r_disk = r_disk * 5.0  ! Random radius in [0, 5]
     t = t * 2.0 * 3.141592653589793  ! Random angle
     x(i) = r_disk * cos(t)
@@ -34,7 +34,7 @@ program sph_planet_formation
     v_circ = sqrt(G * m_central / r_disk) * 0.8
     vx(i) = -v_circ * sin(t) - 0.1 * x(i) / r_disk
     vy(i) = v_circ * cos(t) - 0.1 * y(i) / r_disk
-    mass(i) = mass * 10
+    mass(i) = m * 10
   end do
 
   ! Open file for output
