@@ -1,6 +1,6 @@
 program planet_formation_no_merge_repulse
   implicit none
-  integer, parameter :: n = 1000  ! Number of particles
+  integer, parameter :: n = 500  ! Number of particles
   real, parameter :: G = 1.0     ! Gravitational constant
   real, parameter :: dt = 0.01   ! Time step
   real, parameter :: t_max = 10.0 ! Total simulation time
@@ -32,6 +32,7 @@ program planet_formation_no_merge_repulse
     vy(i) = v_circ * cos(t) - 0.1 * y(i) / r_disk
     mass(i) = 10.0 * m  ! mass
   end do
+
 
   ! Open file for output
   open(unit=10, file='particle_positions.dat', status='replace')
