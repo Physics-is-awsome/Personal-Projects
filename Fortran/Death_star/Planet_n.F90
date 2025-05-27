@@ -21,7 +21,7 @@ program planet_formation_no_merge_repulse
   do i = 1, n
     call random_number(r_disk)
     call random_number(t)
-    call random_number(m)
+    call random_number(mass)
     r_disk = r_disk * 2.0  ! Random radius in [0, 5]
     t = t * 5.0 * 3.141592653589793  ! Random angle
     x(i) = r_disk * cos(t)
@@ -30,7 +30,7 @@ program planet_formation_no_merge_repulse
     v_circ = sqrt(G * n * 1.0 / r_disk) * 0.8  ! Assume central mass ~ n*1.0
     vx(i) = -v_circ * sin(t) - 0.1 * x(i) / r_disk
     vy(i) = v_circ * cos(t) - 0.1 * y(i) / r_disk
-    mass(i) = 10.0 * m  ! mass
+    mass(i) = 10.0 * mass  ! mass
   end do
 
   ! Open file for output
