@@ -4,7 +4,7 @@ program sph_planet_formation
   real, parameter :: G = 1.0     ! Gravitational constant
   real, parameter :: dt = 0.005  ! Time step
   real, parameter :: t_max = 10.0 ! Total simulation time
-  real, parameter :: h = 0.2     ! Smoothing length
+  real, parameter :: h = 0.5     ! Smoothing length
   real, parameter :: eps = 0.02  ! Gravitational softening length
   real, parameter :: m_central = 100.0 ! Central body mass
   real, parameter :: coll_dist = 0.1 ! Distance for repulsive force
