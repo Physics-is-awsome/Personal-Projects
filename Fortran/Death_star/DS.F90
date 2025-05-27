@@ -7,12 +7,14 @@ program planet_destruction
   real, parameter :: rho_0 = 3000.0        ! Planet density (kg/m^3)
   real, parameter :: beam_energy = 1.0e20  ! Beam energy (J)
   real, parameter :: sigma = 1.0e5         ! Beam width (m)
+  integer, parameter :: output_freq = 10    ! Output every 10 time steps
 
   real :: r(nr), theta(nt), dr, dtheta
   real :: rho(nr, nt), u(nr, nt), v(nr, nt), e(nr, nt)  ! Density, velocities, energy
   real :: p(nr, nt)                                     ! Pressure
-  integer :: i, j, n
+  integer :: i, j, n, step_count                ! Added step_count for output
   real :: t, r2, q
+  character(len=20) :: filename                 ! For dynamic file names
 
   ! Initialize grid
   dr = r_planet / real(nr - 1)
@@ -29,9 +31,14 @@ program planet_destruction
     end do
   end do
 
-  ! Time loop
+  ! Initialize time and step counter
   t = 0.0
+  step_count = 0
+
+  ! Time loop
   do while (t < t_max)
+    step_count = step_count + 1  ! Increment step counter
+
     ! Apply plasma beam energy at surface (r = r_planet, theta = 0)
     do i = 1, nr
       do j = 1, nt
@@ -56,18 +63,22 @@ program planet_destruction
       end do
     end do
 
+    ! Output data every output_freq steps
+    if (mod(step_count, output_freq) == 0) then
+      write(filename, '(A10, I4.4, A4)') 'output_t', step_count / output_freq, '.dat'
+      open(unit=10, file=filename, status='replace')
+      do i = 1, nr
+        do j = 1, nt
+          write(10, *) r(i), theta(j), rho(i, j), e(i, j)
+        end do
+      end do
+      close(10)
+      print *, 'Wrote file: ', filename
+    end if
+
     ! Update time
     t = t + dt
     print *, 'Time = ', t
   end do
-
-  ! Output results (e.g., to file for visualization)
-  open(unit=10, file='output.dat', status='replace')
-  do i = 1, nr
-    do j = 1, nt
-      write(10, *) r(i), theta(j), rho(i, j), e(i, j)
-    end do
-  end do
-  close(10)
 
 end program planet_destruction
