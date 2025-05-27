@@ -4,10 +4,10 @@ program planet_formation_no_merge_repulse
   real, parameter :: G = 1.0     ! Gravitational constant
   real, parameter :: dt = 0.01   ! Time step
   real, parameter :: t_max = 10.0 ! Total simulation time
-  real, parameter :: eps = 0.05  ! Softening length for gravity
-  real, parameter :: damp = 0.995 ! Velocity damping factor
+  real, parameter :: eps = 0.02  ! Softening length for gravity
+  real, parameter :: damp = 0.98 ! Velocity damping factor
   real, parameter :: coll_dist = 0.1 ! Distance for repulsive force
-  real, parameter :: k_coll = 100.0 ! Repulsive force constant
+  real, parameter :: k_coll = 80.0 ! Repulsive force constant
   integer, parameter :: n_steps = int(t_max / dt)
   real :: x(n), y(n), vx(n), vy(n), mass(n), ax(n), ay(n)
   real :: r, force, fx, fy, r_disk, v_circ
@@ -27,8 +27,8 @@ program planet_formation_no_merge_repulse
     y(i) = r_disk * sin(t)
     ! Circular velocity with slight inward component
     v_circ = sqrt(G * n * 1.0 / r_disk) * 0.8  ! Assume central mass ~ n*1.0
-    vx(i) = -v_circ * sin(t) - 0.05 * x(i) / r_disk
-    vy(i) = v_circ * cos(t) - 0.05 * y(i) / r_disk
+    vx(i) = -v_circ * sin(t) - 0.1 * x(i) / r_disk
+    vy(i) = v_circ * cos(t) - 0.1 * y(i) / r_disk
     mass(i) = 1.0  ! Equal mass initially
   end do
 
