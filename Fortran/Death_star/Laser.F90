@@ -25,6 +25,7 @@ program sph_planet_formation_laser
   integer :: i, j, step
   real :: t
   logical :: laser_applied = .false. ! Flag to apply laser once
+  logical :: close_encounter
 
   ! Random number seed
   call random_seed()
@@ -117,7 +118,6 @@ program sph_planet_formation_laser
 
     ! Update velocities and positions with damping
     do i = 1, n
-      logical :: close_encounter
       close_encounter = .false.
       do j = 1, n
         if (i /= j) then
