@@ -1,6 +1,6 @@
 program sph_planet_formation
   implicit none
-  integer, parameter :: n = 1000  ! Number of particles
+  integer, parameter :: n = 500  ! Number of particles
   real, parameter :: G = 1.0     ! Gravitational constant
   real, parameter :: dt = 0.005  ! Time step
   real, parameter :: t_max = 10.0 ! Total simulation time
