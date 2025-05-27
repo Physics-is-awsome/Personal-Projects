@@ -10,7 +10,7 @@ program planet_formation_no_merge_repulse
   real, parameter :: k_coll = 80.0 ! Repulsive force constant
   integer, parameter :: n_steps = int(t_max / dt)
   real :: x(n), y(n), vx(n), vy(n), mass(n), ax(n), ay(n)
-  real :: r, force, fx, fy, r_disk, v_circ
+  real :: r, force, fx, fy, r_disk, v_circ, m
   integer :: i, j, step
   real :: t
 
@@ -21,7 +21,7 @@ program planet_formation_no_merge_repulse
   do i = 1, n
     call random_number(r_disk)
     call random_number(t)
-    call random_number(mass)
+    call random_number(m)
     r_disk = r_disk * 2.0  ! Random radius in [0, 5]
     t = t * 5.0 * 3.141592653589793  ! Random angle
     x(i) = r_disk * cos(t)
@@ -30,7 +30,7 @@ program planet_formation_no_merge_repulse
     v_circ = sqrt(G * n * 1.0 / r_disk) * 0.8  ! Assume central mass ~ n*1.0
     vx(i) = -v_circ * sin(t) - 0.1 * x(i) / r_disk
     vy(i) = v_circ * cos(t) - 0.1 * y(i) / r_disk
-    mass(i) = 10.0 * mass  ! mass
+    mass(i) = 10.0 * m  ! mass
   end do
 
   ! Open file for output
