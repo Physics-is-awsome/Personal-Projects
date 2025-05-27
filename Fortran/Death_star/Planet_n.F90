@@ -4,7 +4,7 @@ program planet_formation_no_merge_repulse
   real, parameter :: G = 1.0     ! Gravitational constant
   real, parameter :: dt = 0.01   ! Time step
   real, parameter :: t_max = 10.0 ! Total simulation time
-  real, parameter :: eps = 0.02  ! Softening length for gravity
+  real, parameter :: eps = 0.2  ! Softening length for gravity
   real, parameter :: damp = 0.98 ! Velocity damping factor
   real, parameter :: coll_dist = 0.1 ! Distance for repulsive force
   real, parameter :: k_coll = 80.0 ! Repulsive force constant
@@ -21,6 +21,7 @@ program planet_formation_no_merge_repulse
   do i = 1, n
     call random_number(r_disk)
     call random_number(t)
+    call random_number(m)
     r_disk = r_disk * 2.0  ! Random radius in [0, 5]
     t = t * 5.0 * 3.141592653589793  ! Random angle
     x(i) = r_disk * cos(t)
@@ -29,7 +30,7 @@ program planet_formation_no_merge_repulse
     v_circ = sqrt(G * n * 1.0 / r_disk) * 0.8  ! Assume central mass ~ n*1.0
     vx(i) = -v_circ * sin(t) - 0.1 * x(i) / r_disk
     vy(i) = v_circ * cos(t) - 0.1 * y(i) / r_disk
-    mass(i) = 1.0  ! Equal mass initially
+    mass(i) = 10.0 * m  ! mass
   end do
 
   ! Open file for output
