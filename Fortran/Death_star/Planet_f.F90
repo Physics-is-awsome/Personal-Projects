@@ -5,11 +5,11 @@ program sph_planet_formation
   real, parameter :: dt = 0.005  ! Time step
   real, parameter :: t_max = 10.0 ! Total simulation time
   real, parameter :: h = 0.5     ! Smoothing length
-  real, parameter :: eps = 0.02  ! Gravitational softening length
+  real, parameter :: eps = 0.2  ! Gravitational softening length
   real, parameter :: m_central = 100.0 ! Central body mass
   real, parameter :: coll_dist = 0.1 ! Distance for repulsive force
   real, parameter :: k_coll = 50.0  ! Repulsive force constant
-  real, parameter :: viscosity = 1.0 ! Artificial viscosity coefficient
+  real, parameter :: viscosity = 3.0 ! Artificial viscosity coefficient
   real, parameter :: k_press = 1.0  ! Pressure constant (equation of state)
   real, parameter :: gamma = 5.0/3.0 ! Adiabatic index
   integer, parameter :: n_steps = int(t_max / dt)
