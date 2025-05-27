@@ -17,7 +17,7 @@ circle = plt.Circle((0, 0), 1, color='black', fill=False, linestyle='--')
 ax.add_patch(circle)
 
 # Load initial data for setting up plot
-data = np.loadtxt('  output_t0001.dat')
+data = np.loadtxt('output_t0001.dat')
 r = data[:, 0].reshape(nr, nt)
 theta = data[:, 1].reshape(nr, nt)
 X = r * np.sin(theta) / r_planet
