@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Qt5Agg')  # Use Qt5Agg backend
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -30,15 +32,13 @@ def animate(i):
     rho = data[i, 3:3+3*n:3]
     positions = np.vstack((x, y)).T
     colors = rho  # Default: color by density
-    # Highlight laser-affected particles and show laser beam
     if abs(data[i, 0] - laser_time) < dt:
         colors = np.where((x > 0) & (np.abs(y) < laser_width), -1, rho)
         scatter.set_cmap('viridis')
         scatter.set_clim(vmin=np.min(rho), vmax=np.max(rho))
-        # Draw laser beam as a horizontal line
-        laser_line.set_data([0, 6], [0, 0])  # Line from x=0 to x=6 at y=0
+        laser_line.set_data([0, 6], [0, 0])  # Laser beam from x=0 to x=6
     else:
-        laser_line.set_data([], [])  # Hide laser when not active
+        laser_line.set_data([], [])  # Hide laser
     scatter.set_offsets(positions)
     scatter.set_array(colors)
     for j in range(n):
@@ -49,10 +49,6 @@ def animate(i):
         trails[j].set_data(trail_x, trail_y)
     ax.set_title(f'Time: {data[i, 0]:.2f}, Particles: {n}')
     return [scatter, laser_line] + trails
-
-ani = animation.FuncAnimation(fig, animate, init_func=init, frames=data.shape[0], interval=50, blit=True)
-plt.colorbar(scatter, label='Density (red = laser impact)')
-plt.show()
 
 ani = animation.FuncAnimation(fig, animate, init_func=init, frames=data.shape[0], interval=50, blit=True)
 plt.colorbar(scatter, label='Density (red = laser impact)')
