@@ -35,7 +35,7 @@ program planet_formation_no_merge_repulse
 
 
   ! Open file for output
-  open(unit=10, file='particle_positions.dat', status='replace')
+  open(unit=10, file='particle_positions_n.dat', status='replace')
 
   ! Main simulation loop
   do step = 1, n_steps
