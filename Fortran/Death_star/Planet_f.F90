@@ -27,7 +27,7 @@ program sph_planet_formation
     call random_number(r_disk)
     call random_number(t)
     call random_number(m)
-    r_disk = r_disk * 0.5  ! Random radius in [0, 5]
+    r_disk = r_disk * 10  ! Random radius in [0, 5]
     t = t * 2.0 * 3.141592653589793  ! Random angle
     x(i) = r_disk * cos(t)
     y(i) = r_disk * sin(t)
