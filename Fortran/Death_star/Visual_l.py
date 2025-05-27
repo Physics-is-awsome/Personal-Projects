@@ -13,6 +13,7 @@ trail_length = 10
 past_positions = [[] for _ in range(n)]
 laser_time = 5.0  # From Fortran
 laser_width = 0.1
+dt = 0.003
 
 def init():
     scatter.set_offsets(np.empty((0, 2)))
