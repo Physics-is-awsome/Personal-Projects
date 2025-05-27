@@ -1,6 +1,6 @@
 program planet_formation_accretion
   implicit none
-  integer, parameter :: n = 100  ! Initial number of particles
+  integer, parameter :: n = 1000  ! Initial number of particles
   real, parameter :: G = 1.0     ! Gravitational constant
   real, parameter :: dt = 0.01   ! Time step
   real, parameter :: t_max = 10.0 ! Total simulation time
