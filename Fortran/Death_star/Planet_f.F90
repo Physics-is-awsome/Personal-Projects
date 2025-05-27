@@ -38,7 +38,7 @@ program sph_planet_formation
   end do
 
   ! Open file for output
-  open(unit=10, file='particle_positions.dat', status='replace')
+  open(unit=10, file='particle_positions_f.dat', status='replace')
 
   ! Main simulation loop
   do step = 1, n_steps
