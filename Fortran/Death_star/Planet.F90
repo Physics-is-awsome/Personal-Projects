@@ -31,7 +31,7 @@ program planet_formation_accretion
     v_circ = sqrt(G * n * 1.0 / r_disk) * 0.8  ! Assume central mass ~ n*1.0
     vx(i) = -v_circ * sin(t) - 0.05 * x(i) / r_disk
     vy(i) = v_circ * cos(t) - 0.05 * y(i) / r_disk
-    mass(i) = 1.0  ! Equal mass initially
+    mass(i) = 30.0  ! Equal mass initially
     active(i) = .true.
   end do
 
