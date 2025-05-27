@@ -4,7 +4,7 @@ import matplotlib.animation as animation
 
 # Load the data
 n = 500  # Number of particles
-data = np.loadtxt('particle_positions.dat')
+data = np.loadtxt('particle_positions_f.dat')
 fig, ax = plt.subplots()
 ax.set_xlim(-6, 6)
 ax.set_ylim(-6, 6)
