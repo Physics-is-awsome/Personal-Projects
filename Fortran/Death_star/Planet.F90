@@ -21,7 +21,7 @@ program planet_formation_no_merge_repulse
   do i = 1, n
     call random_number(r_disk)
     call random_number(t)
-    r_disk = r_disk * 5.0  ! Random radius in [0, 5]
+    r_disk = r_disk * 2.0  ! Random radius in [0, 5]
     t = t * 2.0 * 3.141592653589793  ! Random angle
     x(i) = r_disk * cos(t)
     y(i) = r_disk * sin(t)
