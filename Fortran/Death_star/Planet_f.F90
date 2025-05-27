@@ -27,13 +27,13 @@ program sph_planet_formation
     call random_number(r_disk)
     call random_number(t)
     call random_number(m)
-    r_disk = r_disk * 2.0  ! Random radius in [0, 5]
+    r_disk = r_disk * 1.0  ! Random radius in [0, 5]
     t = t * 2.0 * 3.141592653589793  ! Random angle
     x(i) = r_disk * cos(t)
     y(i) = r_disk * sin(t)
-    v_circ = sqrt(G * m_central / r_disk) * 0.4
-    vx(i) = -v_circ * sin(t) - 0.01 * x(i) / r_disk
-    vy(i) = v_circ * cos(t) - 0.01 * y(i) / r_disk
+    v_circ = 0!sqrt(G * m_central / r_disk) * 0.4
+    vx(i) = 0!-v_circ * sin(t) - 0.01 * x(i) / r_disk
+    vy(i) = 0!v_circ * cos(t) - 0.01 * y(i) / r_disk
     mass(i) = m * 10
   end do
 
