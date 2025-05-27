@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 # Load the data
-n = 1000  # Number of particles (as defined in Fortran)
+n = 500  # Number of particles (as defined in Fortran)
 data = np.loadtxt('particle_positions.dat')
 fig, ax = plt.subplots()
 ax.set_xlim(-6, 6)
