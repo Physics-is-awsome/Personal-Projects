@@ -2,8 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-data = np.loadtxt('particle_positions.dat')
-n = (data.shape[1] - 2) // 3  # Number of particles
+# Load the data, specifying columns to avoid logical values
+n = 100  # Number of particles (as defined in Fortran)
+data = np.loadtxt('particle_positions.dat', usecols=range(2*n + 2))  # Load t, n_active, x1, y1, ..., xn, yn
 fig, ax = plt.subplots()
 ax.set_xlim(-6, 6)
 ax.set_ylim(-6, 6)
@@ -14,8 +15,11 @@ def init():
     return points,
 
 def animate(i):
+    # Load active flags as strings and convert to boolean
+    with open('particle_positions.dat', 'r') as f:
+        lines = f.readlines()
+        active = np.array(lines[i].split()[2+2*n:2+3*n], dtype=str) == 'T'
     n_active = int(data[i, 1])
-    active = data[i, 2+2*n:2+3*n].astype(bool)
     x = data[i, 2:2+2*n:2][active]
     y = data[i, 3:3+2*n:2][active]
     points.set_data(x, y)
