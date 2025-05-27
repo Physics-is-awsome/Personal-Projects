@@ -65,7 +65,7 @@ program planet_destruction
 
     ! Output data every output_freq steps
     if (mod(step_count, output_freq) == 0) then
-      write(filename, '(A10, I4.4, A4)') 'output_t', step_count / output_freq, '.dat'
+      write(filename, '(A, I4.4, A)') 'output_t', step_count / output_freq, '.dat'
       open(unit=10, file=filename, status='replace')
       do i = 1, nr
         do j = 1, nt
