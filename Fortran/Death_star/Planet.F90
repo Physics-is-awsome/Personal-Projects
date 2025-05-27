@@ -28,9 +28,9 @@ program planet_formation_accretion
     x(i) = r_disk * cos(t)
     y(i) = r_disk * sin(t)
     ! (trying 0 at the moment) Circular velocity with slight inward component
-    v_circ = 0  !sqrt(G * n * 1.0 / r_disk) * 0.8  ! Assume central mass ~ n*1.0
-    vx(i) = 0    !-v_circ * sin(t) - 0.05 * x(i) / r_disk
-    vy(i) = 0    !v_circ * cos(t) - 0.05 * y(i) / r_disk
+    v_circ = sqrt(G * n * 1.0 / r_disk) * 0.8  ! Assume central mass ~ n*1.0
+    vx(i) = -v_circ * sin(t) - 0.05 * x(i) / r_disk
+    vy(i) = v_circ * cos(t) - 0.05 * y(i) / r_disk
     mass(i) = 30.0  ! Equal mass initially
     active(i) = .true.
   end do
