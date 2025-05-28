@@ -15,7 +15,7 @@ program planet_destruction
   real, parameter :: rho_min = 1.0e-3
   real, parameter :: dt_min = 1.0e-5
   ! Tillotson EOS parameters (granite-like)
-  real, parameter :: eos_a = 0.5, eos_b = 1.3, eos_A = 1.8e11, eos_B = 1.8e11, eos_E0 = 1.0e7
+  real, parameter :: till_a = 0.5, till_b = 1.3, till_A = 1.8e11, till_B = 1.8e11, till_E0 = 1.0e7
   real, parameter :: mu_0 = 1.0e10  ! Shear modulus (Pa)
   real, parameter :: Y_0 = 1.0e9   ! Yield strength (Pa)
   real, parameter :: q_visc = 1.0  ! Artificial viscosity coefficient
@@ -24,9 +24,9 @@ program planet_destruction
   real :: rho(nr, nt), u(nr, nt), v(nr, nt), e(nr, nt)
   real :: p(nr, nt), cs(nr, nt)
   real :: grav_acc(nr), shear_stress(nr, nt)
-  real :: div_v, q_art  ! Moved declarations
+  real :: div_v, q_art
   integer :: i, j, step_count, ierr
-  real :: t, dt, r2, q, cs_max, dt_cfl, beam_factor, mu
+  real :: t, dt, r2, q, cs_max, dt_cfl, beam_factor, mu, penetration
   character(len=20) :: filename
 
   ! Initialize grid
@@ -61,9 +61,9 @@ program planet_destruction
     do i = 1, nr
       do j = 1, nt
         mu = rho(i, j) / rho_0 - 1.0
-        p(i, j) = (eos_a + eos_b / (1.0 + e(i, j) / eos_E0)) * rho(i, j) * e(i, j) + &
-                  eos_A * mu + eos_B * mu**2
-        cs(i, j) = sqrt((eos_A + 2.0 * eos_B * mu) / max(rho(i, j), rho_min))
+        p(i, j) = (till_a + till_b / (1.0 + e(i, j) / till_E0)) * rho(i, j) * e(i, j) + &
+                  till_A * mu + till_B * mu**2
+        cs(i, j) = sqrt((till_A + 2.0 * till_B * mu) / max(rho(i, j), rho_min))
         cs(i, j) = min(cs(i, j), cs_max_limit)
         cs_max = max(cs_max, cs(i, j))
       end do
@@ -76,8 +76,9 @@ program planet_destruction
     do i = 1, nr
       do j = 1, nt
         r2 = (r(i) - r_planet)**2 + (theta(j) * r_planet)**2
+        penetration = max(exp(-rho_0 * r_planet / 1.0e9), 1.0e-30)  ! Increased denominator, capped
         q = beam_factor * (beam_energy / (2.0 * 3.14159 * sigma**2)) * &
-            exp(-r2 / (2.0 * sigma**2)) * exp(-rho_0 * r_planet / 1.0e8)  ! Adjusted penetration
+            exp(-r2 / (2.0 * sigma**2)) * penetration
         e(i, j) = min(e(i, j) + q * dt / max(rho(i, j), rho_min), 1.0e10)
       end do
     end do
@@ -87,7 +88,7 @@ program planet_destruction
       do j = 2, nt - 1
         shear_stress(i, j) = mu_0 * sqrt(((u(i+1, j) - u(i-1, j)) / (2.0 * dr))**2 + &
                                         ((v(i, j+1) - v(i, j-1)) / (2.0 * dtheta))**2)
-        if (shear_stress(i, j) > Y_0) rho(i, j) = 0.5 * rho(i, j)  ! Fracture
+        if (shear_stress(i, j) > Y_0) rho(i, j) = 0.5 * rho(i, j)
       end do
     end do
 
