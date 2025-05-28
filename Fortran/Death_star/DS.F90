@@ -15,11 +15,11 @@ program planet_destruction
   real, parameter :: rho_min = 1.0e-3
   real, parameter :: dt_min = 1.0e-5
   ! Tillotson EOS parameters (granite-like)
-  real, parameter :: t_eos_a = 0.5
-  real, parameter :: t_eos_b = 1.3
-  real, parameter :: t_eos_A = 1.8e11
-  real, parameter :: t_eos_B = 1.8e11
-  real, parameter :: t_eos_E0 = 1.0e7
+  real, parameter :: eos_param_a = 0.5
+  real, parameter :: eos_param_b = 1.3
+  real, parameter :: eos_param_A = 1.8e11
+  real, parameter :: eos_param_B = 1.8e11
+  real, parameter :: eos_param_E0 = 1.0e7
   real, parameter :: mu_0 = 1.0e10  ! Shear modulus (Pa)
   real, parameter :: Y_0 = 1.0e9   ! Yield strength (Pa)
   real, parameter :: q_visc = 1.0  ! Artificial viscosity coefficient
@@ -65,9 +65,9 @@ program planet_destruction
     do i = 1, nr
       do j = 1, nt
         mu = rho(i, j) / rho_0 - 1.0
-        p(i, j) = (t_eos_a + t_eos_b / (1.0 + e(i, j) / t_eos_E0)) * rho(i, j) * e(i, j) + &
-                  t_eos_A * mu + t_eos_B * mu**2
-        cs(i, j) = sqrt((t_eos_A + 2.0 * t_eos_B * mu) / max(rho(i, j), rho_min))
+        p(i, j) = (eos_param_a + eos_param_b / (1.0 + e(i, j) / eos_param_E0)) * rho(i, j) * e(i, j) + &
+                  eos_param_A * mu + eos_param_B * mu**2
+        cs(i, j) = sqrt((eos_param_A + 2.0 * eos_param_B * mu) / max(rho(i, j), rho_min))
         cs(i, j) = min(cs(i, j), cs_max_limit)
         cs_max = max(cs_max, cs(i, j))
       end do
