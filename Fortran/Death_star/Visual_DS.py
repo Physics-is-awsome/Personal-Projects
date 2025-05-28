@@ -57,8 +57,8 @@ Y_full[:, nt-1:] = r_mirror * np.cos(theta_mirror.T) / r_planet
 rho_full[:, nt-1:] = rho[:, ::-1]
 
 # Colormap
-vmin = max(np.min(rho_full[rho_full > 0]), 1.0e-3)
-vmax = max(np.max(rho_full) * 1.1, 3000.0)  ! Adjusted for new rho_0
+vmin = max(np.min(rho_full[rho_full > 0]), 1.0e-3)  # Match rho_min
+vmax = max(np.max(rho_full) * 1.1, 5000.0)  ! Adjusted for granite-like rho
 norm = LogNorm(vmin=vmin, vmax=vmax)
 mesh = ax.pcolormesh(X_full, Y_full, rho_full, cmap='inferno', norm=norm, shading='auto')
 cbar = fig.colorbar(mesh, ax=ax, label='Density (kg/m³)', pad=0.02)
@@ -78,7 +78,7 @@ def update(frame):
     rho_full[:, :nt] = rho
     rho_full[:, nt-1:] = rho[:, ::-1]
     mesh.set_array(rho_full.ravel())
-    ax.set_title(f'Plasma Beam Impact at t = {t_actual:.3f} s', fontsize=12)
+    ax.set_title(f'Plasma Beam Impact at t = {t_actual:.3f} s', fontsize=14)
     return [mesh]
 
 # Create animation
