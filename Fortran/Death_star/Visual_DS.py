@@ -86,6 +86,6 @@ def update(frame):
     return [mesh]
 
 # Create animation
-ani = FuncAnimation(fig, update, frames=n_steps, interval=200, blit=True)
+ani = FuncAnimation(fig, update, frames=n_steps, interval=500, blit=True)
 plt.show()
 plt.close()
