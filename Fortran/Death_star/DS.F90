@@ -16,9 +16,9 @@ program planet_destruction
   real :: p(nr, nt), cs(nr, nt)                        ! Pressure, sound speed
   real :: grav_acc(nr)                                 ! Gravitational acceleration
   integer :: i, j, step_count, ierr
-  real :: t, dt, r2, q, cs_max, dt_cfl
+  real :: t, r2, q, cs_max, dt_cfl
   character(len=20) :: filename
-
+  real :: dt = 1.0e-3
   ! Initialize grid
   dr = r_planet / real(nr - 1)
   dtheta = 3.14159 / real(nt - 1)
@@ -39,7 +39,6 @@ program planet_destruction
   ! Initialize time and step counter
   t = 0.0
   step_count = 0
-  dt = 1.0e-3  ! Initial guess for time step
 
   ! Time loop
   do while (t < t_max)
