@@ -15,7 +15,11 @@ program planet_destruction
   real, parameter :: rho_min = 1.0e-3
   real, parameter :: dt_min = 1.0e-5
   ! Tillotson EOS parameters (granite-like)
-  real, parameter :: till_a = 0.5, till_b = 1.3, till_A = 1.8e11, till_B = 1.8e11, till_E0 = 1.0e7
+  real, parameter :: t_eos_a = 0.5
+  real, parameter :: t_eos_b = 1.3
+  real, parameter :: t_eos_A = 1.8e11
+  real, parameter :: t_eos_B = 1.8e11
+  real, parameter :: t_eos_E0 = 1.0e7
   real, parameter :: mu_0 = 1.0e10  ! Shear modulus (Pa)
   real, parameter :: Y_0 = 1.0e9   ! Yield strength (Pa)
   real, parameter :: q_visc = 1.0  ! Artificial viscosity coefficient
@@ -61,9 +65,9 @@ program planet_destruction
     do i = 1, nr
       do j = 1, nt
         mu = rho(i, j) / rho_0 - 1.0
-        p(i, j) = (till_a + till_b / (1.0 + e(i, j) / till_E0)) * rho(i, j) * e(i, j) + &
-                  till_A * mu + till_B * mu**2
-        cs(i, j) = sqrt((till_A + 2.0 * till_B * mu) / max(rho(i, j), rho_min))
+        p(i, j) = (t_eos_a + t_eos_b / (1.0 + e(i, j) / t_eos_E0)) * rho(i, j) * e(i, j) + &
+                  t_eos_A * mu + t_eos_B * mu**2
+        cs(i, j) = sqrt((t_eos_A + 2.0 * t_eos_B * mu) / max(rho(i, j), rho_min))
         cs(i, j) = min(cs(i, j), cs_max_limit)
         cs_max = max(cs_max, cs(i, j))
       end do
@@ -76,7 +80,7 @@ program planet_destruction
     do i = 1, nr
       do j = 1, nt
         r2 = (r(i) - r_planet)**2 + (theta(j) * r_planet)**2
-        penetration = max(exp(-rho_0 * r_planet / 1.0e9), 1.0e-30)  ! Increased denominator, capped
+        penetration = max(exp(-rho_0 * r_planet / 1.0e9), 1.0e-30)
         q = beam_factor * (beam_energy / (2.0 * 3.14159 * sigma**2)) * &
             exp(-r2 / (2.0 * sigma**2)) * penetration
         e(i, j) = min(e(i, j) + q * dt / max(rho(i, j), rho_min), 1.0e10)
@@ -147,8 +151,9 @@ program planet_destruction
         end do
       end do
       close(10)
-      write(*, '(A,A,A,F10.6,A,F10.2,A,F10.2)') 'Wrote file: ', trim(filename), &
-           ' dt = ', dt, ' cs_max = ', cs_max, ' max rho = ', maxval(rho)
+      write(*, '(A,A,A,F10.6,A,F10.2,A,F10.2,A,F10.2)') 'Wrote file: ', trim(filename), &
+           ' dt = ', dt, ' cs_max = ', cs_max, ' max rho = ', maxval(rho), &
+           ' min rho = ', minval(rho, mask=rho > 0.0)
     end if
 
     ! Update time
