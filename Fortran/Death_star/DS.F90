@@ -15,8 +15,8 @@ program planet_destruction
   real, parameter :: rho_min = 1.0e-3
   real, parameter :: dt_min = 1.0e-5
   ! Tillotson EOS parameters (granite-like)
-  real, parameter :: eos_a = 0.5
-  real, parameter :: eos_b = 1.3
+  real, parameter :: eos_alpha = 0.5
+  real, parameter :: eos_beta = 1.3
   real, parameter :: eos_A = 1.8e11
   real, parameter :: eos_B = 1.8e11
   real, parameter :: eos_E0 = 1.0e7
@@ -65,7 +65,7 @@ program planet_destruction
     do i = 1, nr
       do j = 1, nt
         mu = rho(i, j) / rho_0 - 1.0
-        p(i, j) = (eos_a + eos_b / (1.0 + e(i, j) / eos_E0)) * rho(i, j) * e(i, j) + &
+        p(i, j) = (eos_alpha + eos_beta / (1.0 + e(i, j) / eos_E0)) * rho(i, j) * e(i, j) + &
                   eos_A * mu + eos_B * mu**2
         cs(i, j) = sqrt((eos_A + 2.0 * eos_B * mu) / max(rho(i, j), rho_min))
         cs(i, j) = min(cs(i, j), cs_max_limit)
@@ -157,6 +157,10 @@ program planet_destruction
     end if
 
     ! Update time
+    t = t + dt
+  end do
+
+end program planet_destruction
     t = t + dt
   end do
 
