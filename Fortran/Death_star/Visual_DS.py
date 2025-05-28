@@ -45,9 +45,8 @@ theta = data[:, 1].reshape(nr, nt)
 rho = data[:, 2].reshape(nr, nt)
 
 # Mirror data for full circle (theta from 0 to 2*pi)
-nt_full = 2 * nt - 1  # 2 * 100 - 1 = 199 points
+nt_full = 2 * nt - 1  # 199 points
 theta_full = np.linspace(0, 2 * np.pi, nt_full)
-# Create full arrays
 X_full = np.zeros((nr, nt_full))
 Y_full = np.zeros((nr, nt_full))
 rho_full = np.zeros((nr, nt_full))
@@ -57,11 +56,13 @@ X_full[:, :nt] = r * np.sin(theta) / r_planet
 Y_full[:, :nt] = r * np.cos(theta) / r_planet
 rho_full[:, :nt] = rho
 
-# Fill second half (pi to 2*pi) using symmetry
-theta_mirror = 2 * np.pi - theta[:, ::-1][:, 1:]  # Reverse theta, skip theta=pi
-X_full[:, nt-1:] = r[:, :nt-1] * np.sin(theta_mirror) / r_planet
-Y_full[:, nt-1:] = r[:, :nt-1] * np.cos(theta_mirror) / r_planet
-rho_full[:, nt-1:] = rho[:, ::-1][:, 1:]  # Mirror density
+# Fill second half (pi to 2*pi)
+# Compute mirrored theta: theta_mirror = 2*pi - theta[0:pi] in reverse order
+theta_mirror = np.linspace(np.pi, 2 * np.pi, nt)[:, None]  # Shape (100, 1)
+r_mirror = r[:, :nt]  # Shape (200, 100)
+X_full[:, nt-1:] = r_mirror * np.sin(theta_mirror.T) / r_planet  # Transpose to (1, 100)
+Y_full[:, nt-1:] = r_mirror * np.cos(theta_mirror.T) / r_planet
+rho_full[:, nt-1:] = rho[:, ::-1]  # Mirror density, reverse order
 
 # Set up colormap with fixed scaling
 vmin = max(np.min(rho_full[rho_full > 0]), 1.0e-3)  # Match Fortran rho_min
@@ -85,7 +86,7 @@ def update(frame):
     rho = data[:, 2].reshape(nr, nt)
     # Mirror data
     rho_full[:, :nt] = rho
-    rho_full[:, nt-1:] = rho[:, ::-1][:, 1:]
+    rho_full[:, nt-1:] = rho[:, ::-1]
     mesh.set_array(rho_full.ravel())
     ax.set_title(f'Plasma Beam Impact at t ≈ {(frame * output_freq * dt):.3f} s', fontsize=14)
     return [mesh]
