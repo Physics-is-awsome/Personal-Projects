@@ -1,23 +1,23 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-import matplotlib.cm as cm
 from matplotlib.colors import LogNorm
+import os
 
 # Parameters from Fortran code
-nr = 200  # Updated radial points
-nt = 100  # Updated angular points
+nr = 200  # Radial points
+nt = 100  # Angular points
 r_planet = 6.371e6  # Planet radius (meters)
-dt = 1.0e-3  # Nominal time step (for reference, actual dt varies)
+dt = 1.0e-3  # Nominal time step (for display, actual dt varies)
 t_max = 10.0  # Simulation time (s)
 output_freq = 10  # Output every 10 steps
 
-# Estimate number of steps (adjust based on actual files)
-# Check number of files with: ls /home/ajc/Personal-Projects/Fortran/Death_star/output_t*.dat | wc -l
-n_steps = 100  # Temporary value for testing; replace with actual number of files
-
-# File path
-file_path = '/home/ajc/Personal-Projects/Fortran/Death_star/output_t{0:04d}.dat'
+# Count actual output files
+file_path_template = '/home/ajc/Personal-Projects/Fortran/Death_star/output_t{0:04d}.dat'
+output_files = [f for f in os.listdir('/home/ajc/Personal-Projects/Fortran/Death_star/') 
+                if f.startswith('output_t') and f.endswith('.dat')]
+n_steps = len(output_files)  # Actual number of files
+print(f"Found {n_steps} output files")
 
 # Set up figure and axis
 fig, ax = plt.subplots(figsize=(10, 10), dpi=100)
@@ -32,9 +32,9 @@ ax.add_patch(circle)
 
 # Load initial data
 try:
-    data = np.loadtxt(file_path.format(1))
+    data = np.loadtxt(file_path_template.format(1))
 except FileNotFoundError:
-    print(f"Error: {file_path.format(1)} not found. Check file path or run Fortran code.")
+    print(f"Error: {file_path_template.format(1)} not found. Check file path.")
     exit(1)
 if data.shape[0] != nr * nt:
     print(f"Error: Expected {nr * nt} rows, got {data.shape[0]}. Check grid size.")
@@ -42,14 +42,31 @@ if data.shape[0] != nr * nt:
 
 r = data[:, 0].reshape(nr, nt)
 theta = data[:, 1].reshape(nr, nt)
-X = r * np.sin(theta) / r_planet
-Y = r * np.cos(theta) / r_planet
 rho = data[:, 2].reshape(nr, nt)
 
-# Set up colormap with logarithmic scaling
-vmin, vmax = max(np.min(rho[rho > 0]), 1.0e-3), np.max(rho)  # Avoid log(0), match rho_min
+# Mirror data for full circle (theta from 0 to 2*pi)
+nt_full = 2 * nt - 1  # Extend theta to 2*pi, excluding duplicate at pi
+theta_full = np.linspace(0, 2 * np.pi, nt_full)
+X_full = np.zeros((nr, nt_full))
+Y_full = np.zeros((nr, nt_full))
+rho_full = np.zeros((nr, nt_full))
+
+# Fill first half (0 to pi)
+X_full[:, :nt] = r * np.sin(theta) / r_planet
+Y_full[:, :nt] = r * np.cos(theta) / r_planet
+rho_full[:, :nt] = rho
+
+# Mirror for second half (pi to 2*pi)
+for j in range(nt - 1):
+    X_full[:, nt + j] = r * np.sin(theta[:, nt - 2 - j]) / r_planet  # Reflect theta
+    Y_full[:, nt + j] = -r * np.cos(theta[:, nt - 2 - j]) / r_planet  # Negate y for symmetry
+    rho_full[:, nt + j] = rho[:, nt - 2 - j]  # Symmetric density
+
+# Set up colormap with fixed scaling
+vmin = max(np.min(rho_full[rho_full > 0]), 1.0e-3)  # Match Fortran rho_min
+vmax = np.max(rho_full) * 1.1  # Slightly above max for visibility
 norm = LogNorm(vmin=vmin, vmax=vmax)
-mesh = ax.pcolormesh(X, Y, rho, cmap='inferno', norm=norm, shading='auto')
+mesh = ax.pcolormesh(X_full, Y_full, rho_full, cmap='inferno', norm=norm, shading='auto')
 cbar = fig.colorbar(mesh, ax=ax, label='Density (kg/m³)', pad=0.02)
 cbar.ax.tick_params(labelsize=10)
 
@@ -60,13 +77,16 @@ ax.legend(loc='upper right', fontsize=10)
 # Animation update function
 def update(frame):
     try:
-        data = np.loadtxt(file_path.format(frame + 1))
+        data = np.loadtxt(file_path_template.format(frame + 1))
     except FileNotFoundError:
-        print(f"Error: {file_path.format(frame + 1)} not found. Stopping animation.")
+        print(f"Error: {file_path_template.format(frame + 1)} not found.")
         return [mesh]
     rho = data[:, 2].reshape(nr, nt)
-    mesh.set_array(rho.ravel())
-    # Approximate time (actual dt varies, use nominal dt for display)
+    # Mirror data
+    rho_full[:, :nt] = rho
+    for j in range(nt - 1):
+        rho_full[:, nt + j] = rho[:, nt - 2 - j]
+    mesh.set_array(rho_full.ravel())
     ax.set_title(f'Plasma Beam Impact at t ≈ {(frame * output_freq * dt):.3f} s', fontsize=14)
     return [mesh]
 
