@@ -161,7 +161,4 @@ program planet_destruction
   end do
 
 
-    t = t + dt
-  end do
-
 end program planet_destruction
