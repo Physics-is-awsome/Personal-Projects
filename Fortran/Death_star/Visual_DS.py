@@ -16,7 +16,7 @@ output_freq = 10  # Output every 10 steps
 file_path_template = '/home/ajc/Personal-Projects/Fortran/Death_star/output_t{0:04d}.dat'
 output_files = [f for f in os.listdir('/home/ajc/Personal-Projects/Fortran/Death_star/') 
                 if f.startswith('output_t') and f.endswith('.dat')]
-n_steps = len(output_files)  # Actual number of files
+n_steps = len(output_files)  # Should be 1000
 print(f"Found {n_steps} output files")
 
 # Set up figure and axis
@@ -45,8 +45,9 @@ theta = data[:, 1].reshape(nr, nt)
 rho = data[:, 2].reshape(nr, nt)
 
 # Mirror data for full circle (theta from 0 to 2*pi)
-nt_full = 2 * nt - 1  # Extend theta to 2*pi, excluding duplicate at pi
+nt_full = 2 * nt - 1  # 2 * 100 - 1 = 199 points
 theta_full = np.linspace(0, 2 * np.pi, nt_full)
+# Create full arrays
 X_full = np.zeros((nr, nt_full))
 Y_full = np.zeros((nr, nt_full))
 rho_full = np.zeros((nr, nt_full))
@@ -56,15 +57,15 @@ X_full[:, :nt] = r * np.sin(theta) / r_planet
 Y_full[:, :nt] = r * np.cos(theta) / r_planet
 rho_full[:, :nt] = rho
 
-# Mirror for second half (pi to 2*pi)
-for j in range(nt - 1):
-    X_full[:, nt + j] = r * np.sin(theta[:, nt - 2 - j]) / r_planet  # Reflect theta
-    Y_full[:, nt + j] = -r * np.cos(theta[:, nt - 2 - j]) / r_planet  # Negate y for symmetry
-    rho_full[:, nt + j] = rho[:, nt - 2 - j]  # Symmetric density
+# Fill second half (pi to 2*pi) using symmetry
+theta_mirror = 2 * np.pi - theta[:, ::-1][:, 1:]  # Reverse theta, skip theta=pi
+X_full[:, nt-1:] = r[:, :nt-1] * np.sin(theta_mirror) / r_planet
+Y_full[:, nt-1:] = r[:, :nt-1] * np.cos(theta_mirror) / r_planet
+rho_full[:, nt-1:] = rho[:, ::-1][:, 1:]  # Mirror density
 
 # Set up colormap with fixed scaling
 vmin = max(np.min(rho_full[rho_full > 0]), 1.0e-3)  # Match Fortran rho_min
-vmax = np.max(rho_full) * 1.1  # Slightly above max for visibility
+vmax = np.max(rho_full) * 1.1
 norm = LogNorm(vmin=vmin, vmax=vmax)
 mesh = ax.pcolormesh(X_full, Y_full, rho_full, cmap='inferno', norm=norm, shading='auto')
 cbar = fig.colorbar(mesh, ax=ax, label='Density (kg/m³)', pad=0.02)
@@ -84,8 +85,7 @@ def update(frame):
     rho = data[:, 2].reshape(nr, nt)
     # Mirror data
     rho_full[:, :nt] = rho
-    for j in range(nt - 1):
-        rho_full[:, nt + j] = rho[:, nt - 2 - j]
+    rho_full[:, nt-1:] = rho[:, ::-1][:, 1:]
     mesh.set_array(rho_full.ravel())
     ax.set_title(f'Plasma Beam Impact at t ≈ {(frame * output_freq * dt):.3f} s', fontsize=14)
     return [mesh]
