@@ -13,9 +13,9 @@ program planet_destruction
   real, parameter :: cfl = 0.5
   real, parameter :: cs_max_limit = 1.0e5
   real, parameter :: rho_min = 1.0e-3
-  real, parameter :: dt_min = 1.0e-5  ! Slightly larger for progress
+  real, parameter :: dt_min = 1.0e-5
   ! Tillotson EOS parameters (granite-like)
-  real, parameter :: a = 0.5, b = 1.3, A = 1.8e11, B = 1.8e11, E0 = 1.0e7
+  real, parameter :: eos_a = 0.5, eos_b = 1.3, eos_A = 1.8e11, eos_B = 1.8e11, eos_E0 = 1.0e7
   real, parameter :: mu_0 = 1.0e10  ! Shear modulus (Pa)
   real, parameter :: Y_0 = 1.0e9   ! Yield strength (Pa)
   real, parameter :: q_visc = 1.0  ! Artificial viscosity coefficient
@@ -24,6 +24,7 @@ program planet_destruction
   real :: rho(nr, nt), u(nr, nt), v(nr, nt), e(nr, nt)
   real :: p(nr, nt), cs(nr, nt)
   real :: grav_acc(nr), shear_stress(nr, nt)
+  real :: div_v, q_art  ! Moved declarations
   integer :: i, j, step_count, ierr
   real :: t, dt, r2, q, cs_max, dt_cfl, beam_factor, mu
   character(len=20) :: filename
@@ -60,8 +61,9 @@ program planet_destruction
     do i = 1, nr
       do j = 1, nt
         mu = rho(i, j) / rho_0 - 1.0
-        p(i, j) = (a + b / (1.0 + e(i, j) / E0)) * rho(i, j) * e(i, j) + A * mu + B * mu**2
-        cs(i, j) = sqrt((A + 2.0 * B * mu) / max(rho(i, j), rho_min))
+        p(i, j) = (eos_a + eos_b / (1.0 + e(i, j) / eos_E0)) * rho(i, j) * e(i, j) + &
+                  eos_A * mu + eos_B * mu**2
+        cs(i, j) = sqrt((eos_A + 2.0 * eos_B * mu) / max(rho(i, j), rho_min))
         cs(i, j) = min(cs(i, j), cs_max_limit)
         cs_max = max(cs_max, cs(i, j))
       end do
@@ -70,30 +72,28 @@ program planet_destruction
     dt = max(min(dt, dt_cfl), dt_min)
 
     ! Apply time-dependent plasma beam
-    beam_factor = max(0.0, 1.0 - t / beam_duration)  ! Linear decay
+    beam_factor = max(0.0, 1.0 - t / beam_duration)
     do i = 1, nr
       do j = 1, nt
         r2 = (r(i) - r_planet)**2 + (theta(j) * r_planet)**2
         q = beam_factor * (beam_energy / (2.0 * 3.14159 * sigma**2)) * &
-            exp(-r2 / (2.0 * sigma**2)) * exp(-rho_0 * r_planet / 1.0e6)  ! Penetration
+            exp(-r2 / (2.0 * sigma**2)) * exp(-rho_0 * r_planet / 1.0e8)  ! Adjusted penetration
         e(i, j) = min(e(i, j) + q * dt / max(rho(i, j), rho_min), 1.0e10)
       end do
     end do
 
-    ! Compute shear stress (simplified von Mises)
+    ! Compute shear stress
     do i = 2, nr - 1
       do j = 2, nt - 1
         shear_stress(i, j) = mu_0 * sqrt(((u(i+1, j) - u(i-1, j)) / (2.0 * dr))**2 + &
                                         ((v(i, j+1) - v(i, j-1)) / (2.0 * dtheta))**2)
-        if (shear_stress(i, j) > Y_0) rho(i, j) = 0.5 * rho(i, j)  ! Simulate fracture
+        if (shear_stress(i, j) > Y_0) rho(i, j) = 0.5 * rho(i, j)  ! Fracture
       end do
     end do
 
-    ! Update hydrodynamics with artificial viscosity
+    ! Update hydrodynamics with viscosity
     do i = 2, nr - 1
       do j = 2, nt - 1
-        ! Artificial viscosity
-        real :: div_v, q_art
         div_v = (u(i+1, j) - u(i-1, j)) / (2.0 * dr) + (v(i, j+1) - v(i, j-1)) / (2.0 * dtheta)
         q_art = q_visc * rho(i, j) * max(-div_v, 0.0) * min(dr, r_planet * dtheta)**2
         p(i, j) = p(i, j) + q_art
@@ -108,7 +108,7 @@ program planet_destruction
     ! Outflow boundary conditions
     do j = 1, nt
       rho(1, j) = max(rho(2, j), rho_min)
-      u(1, j) = u(2, j)  ! Outflow
+      u(1, j) = u(2, j)
       v(1, j) = v(2, j)
       e(1, j) = e(2, j)
       p(1, j) = p(2, j)
@@ -139,7 +139,7 @@ program planet_destruction
         print *, 'Error opening file: ', trim(filename), ' Error code: ', ierr
         stop
       end if
-      write(10, *) t  ! Write actual time
+      write(10, *) t
       do i = 1, nr
         do j = 1, nt
           write(10, *) r(i), theta(j), rho(i, j), e(i, j)
