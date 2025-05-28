@@ -41,6 +41,9 @@ r = data[:, 0].reshape(nr, nt)
 theta = data[:, 1].reshape(nr, nt)
 rho = data[:, 2].reshape(nr, nt)
 
+# Replace NaN or invalid rho
+rho = np.where(np.isnan(rho) | (rho <= 0), 1.0e-3, rho)
+
 # Mirror for full circle
 nt_full = 2 * nt - 1
 theta_full = np.linspace(0, 2 * np.pi, nt_full)
@@ -57,8 +60,8 @@ Y_full[:, nt-1:] = r_mirror * np.cos(theta_mirror.T) / r_planet
 rho_full[:, nt-1:] = rho[:, ::-1]
 
 # Colormap
-vmin = max(np.min(rho_full[rho_full > 0]), 1.0e-3)  # Match rho_min
-vmax = max(np.max(rho_full) * 1.1, 5000.0)  ! Adjusted for granite-like rho
+vmin = 1.0e-3  ! Match rho_min
+vmax = min(max(np.max(rho_full) * 1.1, 5000.0), 1.0e5)  ! Cap for stability
 norm = LogNorm(vmin=vmin, vmax=vmax)
 mesh = ax.pcolormesh(X_full, Y_full, rho_full, cmap='inferno', norm=norm, shading='auto')
 cbar = fig.colorbar(mesh, ax=ax, label='Density (kg/m³)', pad=0.02)
@@ -75,6 +78,7 @@ def update(frame):
         print(f"Error: {file_path_template.format(frame + 1)} not found.")
         return [mesh]
     rho = data[:, 2].reshape(nr, nt)
+    rho = np.where(np.isnan(rho) | (rho <= 0), 1.0e-3, rho)  ! Handle NaN
     rho_full[:, :nt] = rho
     rho_full[:, nt-1:] = rho[:, ::-1]
     mesh.set_array(rho_full.ravel())
