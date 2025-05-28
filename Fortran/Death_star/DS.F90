@@ -160,7 +160,7 @@ program planet_destruction
     t = t + dt
   end do
 
-end program planet_destruction
+
     t = t + dt
   end do
 
