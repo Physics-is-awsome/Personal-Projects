@@ -6,17 +6,16 @@ module mhd_module
     !============================================================
     ! Subroutine: Compute the current density (J = curl(B))
     !============================================================
-    subroutine compute_current(Bx, By, Jz, dx, dy)
-        real(kind=8), intent(in) :: Bx(:,:), By(:,:), dx, dy
+    subroutine compute_current(Bx, By, Jz)
+        real(kind=8), intent(in) :: Bx(:,:), By(:,:)
         real(kind=8), intent(out) :: Jz(:,:)
         real(kind=8), parameter :: Mu_in = 7.9577D+5
         integer :: i, j
 
-        ! Calculate current density Jz using finite differences
         do i = 2, size(Bx, 1) - 1
             do j = 2, size(Bx, 2) - 1
-                Jz(i, j) = ((By(i+1, j) - By(i-1, j)) / (2.0 * dx) - &
-                            (Bx(i, j+1) - Bx(i, j-1)) / (2.0 * dy)) / Mu_in
+                Jz(i,j) = ((By(i+1,j) - By(i-1,j)) / (2.0 * dx) - &
+                           (Bx(i,j+1) - Bx(i,j-1)) / (2.0 * dy)) / Mu_in
             end do
         end do
     end subroutine compute_current
@@ -24,12 +23,11 @@ module mhd_module
     !============================================================
     ! Subroutine: Update velocity field using the Navier-Stokes equation
     !============================================================
-    subroutine update_velocity(u, v, Jz, Bx, By, p, u_new, v_new, dx, dy, dt, Re)
+    subroutine update_velocity(u, v, Jz, Bx, By, p, u_new, v_new)
         real(kind=8), intent(in) :: u(:,:), v(:,:), Jz(:,:), Bx(:,:), By(:,:), p(:,:)
         real(kind=8), intent(out) :: u_new(:,:), v_new(:,:)
-        real(kind=8), intent(in) :: dx, dy, dt, Re
-        integer :: i, j
         real(kind=8) :: dpdx, dpdy
+        integer :: i, j
 
         do i = 2, size(u, 1) - 1
             do j = 2, size(u, 2) - 1
@@ -59,16 +57,15 @@ module mhd_module
         implicit none
         real(kind=8), intent(in) :: Jz(nx,ny), Bx(nx,ny), By(nx,ny)
         real(kind=8), intent(out) :: T_new(nx,ny)
-        integer :: i, j
         real(kind=8) :: Bmag, bx, by, dTdx, dTdy, q_parallel, Q, rad
         real(kind=8) :: eta_local
-        real(kind=8), parameter :: T_ref = 1.0d6  ! Reference temperature for resistivity
+        real(kind=8), parameter :: T_ref = 1.0d6
+        integer :: i, j
 
         T_new = T
 
         do i = 2, nx-1
             do j = 2, ny-1
-                ! Compute magnetic field magnitude and unit vector
                 Bmag = sqrt(Bx(i,j)**2 + By(i,j)**2)
                 if (Bmag > 1.0d-10) then
                     bx = Bx(i,j) / Bmag
@@ -78,29 +75,23 @@ module mhd_module
                     by = 0.0d0
                 endif
 
-                ! Temperature gradients
                 dTdx = (T(i+1,j) - T(i-1,j)) / (2.0 * dx)
                 dTdy = (T(i,j+1) - T(i,j-1)) / (2.0 * dy)
 
-                ! Field-aligned conduction
                 q_parallel = Kappa * ( &
-                    (bx * bx * (T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
-                     by * by * (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2 + &
-                     bx * by * ((T(i+1,j+1) - T(i+1,j-1) - T(i-1,j+1) + T(i-1,j-1)) / (4.0 * dx * dy)))
+                    bx * bx * (T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
+                    by * by * (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2 + &
+                    bx * by * ((T(i+1,j+1) - T(i+1,j-1) - T(i-1,j+1) + T(i-1,j-1)) / (4.0 * dx * dy)))
 
-                ! Temperature-dependent resistivity
                 eta_local = eta * max(T(i,j) / T_ref, 0.1d0)**(-1.5d0)
                 Q = eta_local * Jz(i,j)**2
                 rad = -sigma * T(i,j)**4
 
-                ! Update temperature
                 T_new(i,j) = T(i,j) + dt * (q_parallel + Q + rad)
-
                 if (T_new(i,j) < 0.0d0) T_new(i,j) = 0.0d0
             end do
         end do
 
-        ! Boundary conditions
         T_new(1,:) = T(1,:)
         T_new(nx,:) = T(nx,:)
         T_new(:,1) = T(:,1)
@@ -110,10 +101,10 @@ module mhd_module
     !============================================================
     ! Subroutine: Compute pressure from temperature and density
     !============================================================
-    subroutine compute_pressure(T, rho, p)
+    subroutine compute_pressure(rho, p)
         use Initial_var
         implicit none
-        real(kind=8), intent(in) :: T(nx,ny), rho(nx,ny)
+        real(kind=8), intent(in) :: rho(nx,ny)
         real(kind=8), intent(out) :: p(nx,ny)
         real(kind=8), parameter :: gamma = 5.0d0 / 3.0d0
         real(kind=8), parameter :: cv = 1.0d0
@@ -129,10 +120,10 @@ module mhd_module
     !============================================================
     ! Subroutine: Update density (continuity equation)
     !============================================================
-    subroutine update_density(rho, u, v, rho_new, dx, dy, dt)
+    subroutine update_density(rho, u, v, rho_new)
         use Initial_var
         implicit none
-        real(kind=8), intent(in) :: rho(nx,ny), u(nx,ny), v(nx,ny), dx, dy, dt
+        real(kind=8), intent(in) :: rho(nx,ny), u(nx,ny), v(nx,ny)
         real(kind=8), intent(out) :: rho_new(nx,ny)
         integer :: i, j
 
@@ -148,7 +139,6 @@ module mhd_module
             end do
         end do
 
-        ! Boundary conditions
         rho_new(1,:) = rho(1,:)
         rho_new(nx,:) = rho(nx,:)
         rho_new(:,1) = rho(:,1)
@@ -158,10 +148,10 @@ module mhd_module
     !============================================================
     ! Subroutine: Update magnetic field using induction equation
     !============================================================
-    subroutine update_magnetic_field(Bx, By, u, v, T, Bx_new, By_new, dx, dy, dt)
+    subroutine update_magnetic_field(Bx, By, u, v, Bx_new, By_new)
         use Initial_var
         implicit none
-        real(kind=8), intent(in) :: Bx(nx,ny), By(nx,ny), u(nx,ny), v(nx,ny), T(nx,ny), dx, dy, dt
+        real(kind=8), intent(in) :: Bx(nx,ny), By(nx,ny), u(nx,ny), v(nx,ny)
         real(kind=8), intent(out) :: Bx_new(nx,ny), By_new(nx,ny)
         real(kind=8) :: eta_local
         real(kind=8), parameter :: T_ref = 1.0d6
@@ -176,7 +166,7 @@ module mhd_module
                     eta_local * ((Bx(i+1,j) - 2.0 * Bx(i,j) + Bx(i-1,j)) / dx**2 + &
                                  (Bx(i,j+1) - 2.0 * Bx(i,j) + Bx(i,j-1)) / dy**2))
                 By_new(i,j) = By(i,j) + dt * ( &
-                    -(u(i,j) * (By(i+1,j) - Bx(i-1,j)) / (2.0 * dx) + &
+                    -(u(i,j) * (By(i+1,j) - By(i-1,j)) / (2.0 * dx) + &
                       v(i,j) * (By(i,j+1) - By(i,j-1)) / (2.0 * dy)) + &
                     eta_local * ((By(i+1,j) - 2.0 * By(i,j) + By(i-1,j)) / dx**2 + &
                                  (By(i,j+1) - 2.0 * By(i,j) + By(i,j-1)) / dy**2))
@@ -187,9 +177,10 @@ module mhd_module
     !============================================================
     ! Subroutine: Enforce incompressibility (pressure correction)
     !============================================================
-    subroutine enforce_incompressibility(u, v, p, dx, dy, dt)
+    subroutine enforce_incompressibility(u, v, p)
+        use Initial_var
+        implicit none
         real(kind=8), intent(inout) :: u(:,:), v(:,:), p(:,:)
-        real(kind=8), intent(in) :: dx, dy, dt
         real(kind=8), allocatable :: divergence(:,:), dpdx(:,:), dpdy(:,:)
         integer :: i, j, iter, max_iter
         real(kind=8), parameter :: tolerance = 1.0e-6
@@ -237,29 +228,28 @@ module mhd_module
     !============================================================
     ! Subroutine: Main time-stepping driver
     !============================================================
-    subroutine mhd_step(u, v, Bx, By, p, T, rho, Jz, dx, dy, dt, Re)
+    subroutine mhd_step(u, v, Bx, By, p, rho, Jz)
         use Initial_var
         implicit none
-        real(kind=8), intent(inout) :: u(nx,ny), v(nx,ny), Bx(nx,ny), By(nx,ny), p(nx,ny), T(nx,ny), rho(nx,ny)
+        real(kind=8), intent(inout) :: u(nx,ny), v(nx,ny), Bx(nx,ny), By(nx,ny), p(nx,ny), rho(nx,ny)
         real(kind=8), intent(out) :: Jz(nx,ny)
-        real(kind=8), intent(in) :: dx, dy, dt, Re
         real(kind=8), allocatable :: u_new(:,:), v_new(:,:), Bx_new(:,:), By_new(:,:), T_new(:,:), rho_new(:,:)
 
         allocate(u_new(nx,ny), v_new(nx,ny), Bx_new(nx,ny), By_new(nx,ny), T_new(nx,ny), rho_new(nx,ny))
 
-        call compute_current(Bx, By, Jz, dx, dy)
+        call compute_current(Bx, By, Jz)
         call solve_heat_equation(Jz, Bx, By, T_new)
         T = T_new
-        call compute_pressure(T, rho, p)
-        call update_velocity(u, v, Jz, Bx, By, p, u_new, v_new, dx, dy, dt, Re)
+        call compute_pressure(rho, p)
+        call update_velocity(u, v, Jz, Bx, By, p, u_new, v_new)
         u = u_new
         v = v_new
-        call update_density(rho, u, v, rho_new, dx, dy, dt)
+        call update_density(rho, u, v, rho_new)
         rho = rho_new
-        call update_magnetic_field(Bx, By, u, v, T, Bx_new, By_new, dx, dy, dt)
+        call update_magnetic_field(Bx, By, u, v, Bx_new, By_new)
         Bx = Bx_new
         By = By_new
-        call enforce_incompressibility(u, v, p, dx, dy, dt)
+        call enforce_incompressibility(u, v, p)
 
         deallocate(u_new, v_new, Bx_new, By_new, T_new, rho_new)
     end subroutine mhd_step
