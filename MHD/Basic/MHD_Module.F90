@@ -174,84 +174,8 @@ module mhd_module
         end do
     end subroutine update_magnetic_field
 
-    !============================================================
-    ! Subroutine: Enforce incompressibility (pressure correction)
-    !============================================================
-    subroutine enforce_incompressibility(u, v, p)
-        use Initial_var
-        implicit none
-        real(kind=8), intent(inout) :: u(:,:), v(:,:), p(:,:)
-        real(kind=8), allocatable :: divergence(:,:), dpdx(:,:), dpdy(:,:)
-        integer :: i, j, iter, max_iter
-        real(kind=8), parameter :: tolerance = 1.0e-6
 
-        allocate(divergence(size(u, 1), size(u, 2)))
-        allocate(dpdx(size(u, 1), size(u, 2)))
-        allocate(dpdy(size(u, 1), size(u, 2)))
 
-        max_iter = 100
-        do iter = 1, max_iter
-            do i = 2, size(u, 1) - 1
-                do j = 2, size(u, 2) - 1
-                    divergence(i,j) = ((u(i+1,j) - u(i-1,j)) / (2.0 * dx)) + &
-                                      ((v(i,j+1) - v(i,j-1)) / (2.0 * dy))
-                end do
-            end do
 
-            if (maxval(abs(divergence)) < tolerance) exit
-
-            do i = 2, size(p, 1) - 1
-                do j = 2, size(p, 2) - 1
-                    p(i,j) = (1.0 / 4.0) * (p(i+1,j) + p(i-1,j) + p(i,j+1) + p(i,j-1) - &
-                             divergence(i,j) * dx * dy)
-                end do
-            end do
-
-            do i = 2, size(p, 1) - 1
-                do j = 2, size(p, 2) - 1
-                    dpdx(i,j) = (p(i+1,j) - p(i-1,j)) / (2.0 * dx)
-                    dpdy(i,j) = (p(i,j+1) - p(i,j-1)) / (2.0 * dy)
-                end do
-            end do
-
-            do i = 2, size(u, 1) - 1
-                do j = 2, size(u, 2) - 1
-                    u(i,j) = u(i,j) - dpdx(i,j) * dt
-                    v(i,j) = v(i,j) - dpdy(i,j) * dt
-                end do
-            end do
-        end do
-
-        deallocate(divergence, dpdx, dpdy)
-    end subroutine enforce_incompressibility
-
-    !============================================================
-    ! Subroutine: Main time-stepping driver
-    !============================================================
-    subroutine mhd_step(u, v, Bx, By, p, rho, Jz)
-        use Initial_var
-        implicit none
-        real(kind=8), intent(inout) :: u(nx,ny), v(nx,ny), Bx(nx,ny), By(nx,ny), p(nx,ny), rho(nx,ny)
-        real(kind=8), intent(out) :: Jz(nx,ny)
-        real(kind=8), allocatable :: u_new(:,:), v_new(:,:), Bx_new(:,:), By_new(:,:), T_new(:,:), rho_new(:,:)
-
-        allocate(u_new(nx,ny), v_new(nx,ny), Bx_new(nx,ny), By_new(nx,ny), T_new(nx,ny), rho_new(nx,ny))
-
-        call compute_current(Bx, By, Jz)
-        call solve_heat_equation(Jz, Bx, By, T_new)
-        T = T_new
-        call compute_pressure(rho, p)
-        call update_velocity(u, v, Jz, Bx, By, p, u_new, v_new)
-        u = u_new
-        v = v_new
-        call update_density(rho, u, v, rho_new)
-        rho = rho_new
-        call update_magnetic_field(Bx, By, u, v, Bx_new, By_new)
-        Bx = Bx_new
-        By = By_new
-        call enforce_incompressibility(u, v, p)
-
-        deallocate(u_new, v_new, Bx_new, By_new, T_new, rho_new)
-    end subroutine mhd_step
 
 end module mhd_module
