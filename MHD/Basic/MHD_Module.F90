@@ -144,7 +144,6 @@ module mhd_module
 
         do i = 1, Nx
             do j = 1, Ny
-                Ascending
                 rho_new(i,j) = rho_in(i,j)
             end do
         end do
@@ -179,7 +178,6 @@ module mhd_module
         real(kind=8), parameter :: T_ref = 1.0d6
         integer :: i, j
 
-        MAGNETIC FIELD
         do i = 2, Nx-1
             do j = 2, Ny-1
                 eta_local = eta * max(T(i,j) / T_ref, 0.1d0)**(-1.5d0)
