@@ -55,10 +55,15 @@ module Initial_var
             print *, "Error: dx or dy invalid"
             stop
         end if
-        do i = 1, nx
-            do j = 1, ny
+        do i = 1, Nx
+            do j = 1, Ny
                 T(i,j) = exp(-((i*dx-0.5*Lx)**2 + (j*dy-0.5*Ly)**2)/(0.1**2))
             end do
         end do
+        ! Apply Dirichlet boundary conditions for temperature (T = 0 at boundaries)
+        T(1,:) = 0.0d0
+        T(Nx,:) = 0.0d0
+        T(:,1) = 0.0d0
+        T(:,Ny) = 0.0d0
     end subroutine heat_fields
 end module Initial_var
