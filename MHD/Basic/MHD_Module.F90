@@ -18,6 +18,11 @@ module mhd_module
                            (Bx(i,j+1) - Bx(i,j-1)) / (2.0 * dy)) / Mu_in
             end do
         end do
+        ! Set boundary values for Jz (e.g., zero at boundaries)
+        Jz(1,:) = 0.0d0
+        Jz(Nx,:) = 0.0d0
+        Jz(:,1) = 0.0d0
+        Jz(:,Ny) = 0.0d0
     end subroutine compute_current
 
     !============================================================
@@ -47,6 +52,15 @@ module mhd_module
                     dpdy - Jz(i,j) * Bx(i,j))
             end do
         end do
+        ! Apply no-slip boundary conditions for velocity
+        u_new(1,:) = 0.0d0
+        u_new(Nx,:) = 0.0d0
+        u_new(:,1) = 0.0d0
+        u_new(:,Ny) = 0.0d0
+        v_new(1,:) = 0.0d0
+        v_new(Nx,:) = 0.0d0
+        v_new(:,1) = 0.0d0
+        v_new(:,Ny) = 0.0d0
     end subroutine update_velocity
 
     !============================================================
@@ -55,8 +69,8 @@ module mhd_module
     subroutine solve_heat_equation(Jz, Bx, By, T_new)
         use Initial_var
         implicit none
-        real(kind=8), intent(in) :: Jz(nx,ny), Bx(nx,ny), By(nx,ny)
-        real(kind=8), intent(out) :: T_new(nx,ny)
+        real(kind=8), intent(in) :: Jz(Nx,Ny), Bx(Nx,Ny), By(Nx,Ny)
+        real(kind=8), intent(out) :: T_new(Nx,Ny)
         real(kind=8) :: Bmag, bx, by, dTdx, dTdy, q_parallel, Q, rad
         real(kind=8) :: eta_local
         real(kind=8), parameter :: T_ref = 1.0d6
@@ -64,8 +78,8 @@ module mhd_module
 
         T_new = T
 
-        do i = 2, nx-1
-            do j = 2, ny-1
+        do i = 2, Nx-1
+            do j = 2, Ny-1
                 Bmag = sqrt(Bx(i,j)**2 + By(i,j)**2)
                 if (Bmag > 1.0d-10) then
                     bx = Bx(i,j) / Bmag
@@ -92,10 +106,11 @@ module mhd_module
             end do
         end do
 
+        ! Apply Dirichlet boundary conditions (copy from initial T)
         T_new(1,:) = T(1,:)
-        T_new(nx,:) = T(nx,:)
+        T_new(Nx,:) = T(Nx,:)
         T_new(:,1) = T(:,1)
-        T_new(:,ny) = T(:,ny)
+        T_new(:,Ny) = T(:,Ny)
     end subroutine solve_heat_equation
 
     !============================================================
@@ -104,15 +119,16 @@ module mhd_module
     subroutine compute_pressure(rho, p)
         use Initial_var
         implicit none
-        real(kind=8), intent(in) :: rho(nx,ny)
-        real(kind=8), intent(out) :: p(nx,ny)
+        real(kind=8), intent(in) :: rho(Nx,Ny)
+        real(kind=8), intent(out) :: p(Nx,Ny)
         real(kind=8), parameter :: gamma = 5.0d0 / 3.0d0
         real(kind=8), parameter :: cv = 1.0d0
         integer :: i, j
 
-        do i = 1, nx
-            do j = 1, ny
+        do i = 1, Nx
+            do j = 1, Ny
                 p(i,j) = (gamma - 1.0d0) * rho(i,j) * cv * T(i,j)
+                if (p(i,j) < 0.0d0) p(i,j) = 0.0d0  ! Ensure non-negative pressure
             end do
         end do
     end subroutine compute_pressure
@@ -123,26 +139,28 @@ module mhd_module
     subroutine update_density(rho, u, v, rho_new)
         use Initial_var
         implicit none
-        real(kind=8), intent(in) :: rho(nx,ny), u(nx,ny), v(nx,ny)
-        real(kind=8), intent(out) :: rho_new(nx,ny)
+        real(kind=8), intent(in) :: rho(Nx,Ny), u(Nx,Ny), v(Nx,Ny)
+        real(kind=8), intent(out) :: rho_new(Nx,Ny)
         integer :: i, j
 
         rho_new = rho
 
-        do i = 2, nx-1
-            do j = 2, ny-1
+        do i = 2, Nx-1
+            do j = 2, Ny-1
                 rho_new(i,j) = rho(i,j) - dt * ( &
                     u(i,j) * (rho(i+1,j) - rho(i-1,j)) / (2.0 * dx) + &
                     v(i,j) * (rho(i,j+1) - rho(i,j-1)) / (2.0 * dy) + &
                     rho(i,j) * ((u(i+1,j) - u(i-1,j)) / (2.0 * dx) + &
                                 (v(i,j+1) - v(i,j-1)) / (2.0 * dy)))
+                if (rho_new(i,j) < 0.0d0) rho_new(i,j) = 0.1d0  ! Prevent negative density
             end do
         end do
 
+        ! Apply boundary conditions (copy from initial rho)
         rho_new(1,:) = rho(1,:)
-        rho_new(nx,:) = rho(nx,:)
+        rho_new(Nx,:) = rho(Nx,:)
         rho_new(:,1) = rho(:,1)
-        rho_new(:,ny) = rho(:,ny)
+        rho_new(:,Ny) = rho(:,Ny)
     end subroutine update_density
 
     !============================================================
@@ -151,14 +169,14 @@ module mhd_module
     subroutine update_magnetic_field(Bx, By, u, v, Bx_new, By_new)
         use Initial_var
         implicit none
-        real(kind=8), intent(in) :: Bx(nx,ny), By(nx,ny), u(nx,ny), v(nx,ny)
-        real(kind=8), intent(out) :: Bx_new(nx,ny), By_new(nx,ny)
+        real(kind=8), intent(in) :: Bx(Nx,Ny), By(Nx,Ny), u(Nx,Ny), v(Nx,Ny)
+        real(kind=8), intent(out) :: Bx_new(Nx,Ny), By_new(Nx,Ny)
         real(kind=8) :: eta_local
         real(kind=8), parameter :: T_ref = 1.0d6
         integer :: i, j
 
-        do i = 2, nx-1
-            do j = 2, ny-1
+        do i = 2, Nx-1
+            do j = 2, Ny-1
                 eta_local = eta * max(T(i,j) / T_ref, 0.1d0)**(-1.5d0)
                 Bx_new(i,j) = Bx(i,j) + dt * ( &
                     -(u(i,j) * (Bx(i+1,j) - Bx(i-1,j)) / (2.0 * dx) + &
@@ -172,10 +190,14 @@ module mhd_module
                                  (By(i,j+1) - 2.0 * By(i,j) + By(i,j-1)) / dy**2))
             end do
         end do
+        ! Apply periodic boundary conditions for magnetic field
+        Bx_new(1,:) = Bx_new(Nx-1,:)
+        Bx_new(Nx,:) = Bx_new(2,:)
+        Bx_new(:,1) = Bx_new(:,Ny-1)
+        Bx_new(:,Ny) = Bx_new(:,2)
+        By_new(1,:) = By_new(Nx-1,:)
+        By_new(Nx,:) = By_new(2,:)
+        By_new(:,1) = By_new(:,Ny-1)
+        By_new(:,Ny) = By_new(:,2)
     end subroutine update_magnetic_field
-
-
-
-
-
 end module mhd_module
