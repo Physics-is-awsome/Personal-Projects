@@ -113,74 +113,74 @@ module mhd_module
     !============================================================
     ! Subroutine: Update the magnetic field using the induction equation
     !============================================================
-    subroutine update_magnetic_field(Bx, By, u, v, Bx_new, By_new, dx, dy, dt, Rm)
-        real(kind=8), intent(in) :: Bx(:,:), By(:,:), u(:,:), v(:,:), dx, dy, dt, Rm
-        real(kind=8), intent(out) :: Bx_new(:,:), By_new(:,:)
-        integer :: i, j
+subroutine update_magnetic_field(Bx, By, u, v, T, Bx_new, By_new, dx, dy, dt)
+    real(kind=8), intent(in) :: Bx(:,:), By(:,:), u(:,:), v(:,:), T(:,:), dx, dy, dt
+    real(kind=8), intent(out) :: Bx_new(:,:), By_new(:,:)
+    real(kind=8) :: Rm_local, eta_local
+    integer :: i, j
 
-        do i = 2, size(Bx, 1) - 1
-            do j = 2, size(Bx, 2) - 1
-                Bx_new(i, j) = Bx(i, j) + dt * ( &
-                    -(u(i, j) * (Bx(i+1, j) - Bx(i-1, j)) / (2.0 * dx)) + &
-                    (1.0 / Rm) * ((Bx(i+1, j) - 2.0 * Bx(i, j) + Bx(i-1, j)) / dx**2 + &
-                                  (Bx(i, j+1) - 2.0 * Bx(i, j) + Bx(i, j-1)) / dy**2) )
-                By_new(i, j) = By(i, j) + dt * ( &
-                    -(v(i, j) * (By(i, j+1) - By(i, j-1)) / (2.0 * dy)) + &
-                    (1.0 / Rm) * ((By(i+1, j) - 2.0 * By(i, j) + By(i-1, j)) / dx**2 + &
-                                  (By(i, j+1) - 2.0 * By(i, j) + By(i, j-1)) / dy**2) )
-            end do
+    do i = 2, size(Bx, 1) - 1
+        do j = 2, size(Bx, 2) - 1
+            eta_local = eta * (T(i,j) / T_ref)**(-1.5d0)  ! Spitzer resistivity
+            Rm_local = 1.0d0 / eta_local
+            Bx_new(i, j) = Bx(i, j) + dt * ( &
+                -(u(i, j) * (Bx(i+1, j) - Bx(i-1, j)) / (2.0 * dx)) + &
+                (1.0 / Rm_local) * ((Bx(i+1, j) - 2.0 * Bx(i, j) + Bx(i-1, j)) / dx**2 + &
+                                    (Bx(i, j+1) - 2.0 * Bx(i, j) + Bx(i, j-1)) / dy**2) )
+            By_new(i, j) = By(i, j) + dt * ( &
+                -(v(i, j) * (By(i, j+1) - By(i, j-1)) / (2.0 * dy)) + &
+                (1.0 / Rm_local) * ((By(i+1, j) - 2.0 * By(i, j) + By(i-1, j)) / dx**2 + &
+                                    (By(i, j+1) - 2.0 * By(i, j) + By(i, j-1)) / dy**2) )
         end do
-    end subroutine update_magnetic_field
+    end do
+end subroutine update_magnetic_field
+!=====================================================
+! Computing pressure
+!=====================================================
+   subroutine compute_pressure(T, rho, p)
+    use Initial_var
+    implicit none
+    real(kind=8), intent(in) :: T(nx,ny), rho(nx,ny)
+    real(kind=8), intent(out) :: p(nx,ny)
+    real(kind=8) :: gamma, cv
+    integer :: i, j
 
-    !============================================================
-    ! Subroutine: Enforce incompressibility (pressure correction)
-    !============================================================
-    subroutine enforce_incompressibility(u, v, p, dx, dy, dt)
-        real(kind=8), intent(inout) :: u(:,:), v(:,:), p(:,:)
-        real(kind=8), intent(in) :: dx, dy, dt
-        real(kind=8), allocatable :: divergence(:,:), dpdx(:,:), dpdy(:,:)
-        integer :: i, j, iter, max_iter
-        real(kind=8), parameter :: tolerance = 1.0e-6
+    gamma = 5.0d0 / 3.0d0  ! Adiabatic index for ideal gas
+    cv = 1.0d0  ! Specific heat, adjust for units
 
-        allocate(divergence(size(u, 1), size(u, 2)))
-        allocate(dpdx(size(u, 1), size(u, 2)))
-        allocate(dpdy(size(u, 1), size(u, 2)))
-
-        max_iter = 100
-        do iter = 1, max_iter
-            do i = 2, size(u, 1) - 1
-                do j = 2, size(u, 2) - 1
-                    divergence(i, j) = ((u(i+1, j) - u(i-1, j)) / (2.0 * dx)) + &
-                                       ((v(i, j+1) - v(i, j-1)) / (2.0 * dy))
-                end do
-            end do
-
-            if (maxval(abs(divergence)) < tolerance) exit
-
-            do i = 2, size(p, 1) - 1
-                do j = 2, size(p, 2) - 1
-                    p(i, j) = (1.0 / 4.0) * (p(i+1, j) + p(i-1, j) + p(i, j+1) + p(i, j-1) - divergence(i, j) * dx * dy)
-                end do
-            end do
-
-            do i = 2, size(p, 1) - 1
-                do j = 2, size(p, 2) - 1
-                    dpdx(i, j) = (p(i+1, j) - p(i-1, j)) / (2.0 * dx)
-                    dpdy(i, j) = (p(i, j+1) - p(i, j-1)) /  (2.0 * dy)
-                end do
-            end do
-
-            ! Correct velocity field
-            do i = 2, size(u, 1) - 1
-                do j = 2, size(u, 2) - 1
-                    u(i, j) = u(i, j) - dpdx(i, j) * dt
-                    v(i, j) = v(i, j) - dpdy(i, j) * dt
-                end do
-            end do
+    do i = 1, nx
+        do j = 1, ny
+            p(i,j) = (gamma - 1.0d0) * rho(i,j) * cv * T(i,j)
         end do
+    end do
+end subroutine compute_pressure
+!====================================================
+! Update density
+!====================================================
+subroutine update_density(rho, u, v, rho_new, dx, dy, dt)
+    use Initial_var
+    implicit none
+    real(kind=8), intent(in) :: rho(nx,ny), u(nx,ny), v(nx,ny), dx, dy, dt
+    real(kind=8), intent(out) :: rho_new(nx,ny)
+    integer :: i, j
 
-        ! Deallocate temporary arrays
-        deallocate(divergence, dpdx, dpdy)
-    end subroutine enforce_incompressibility
+    rho_new = rho
+
+    do i = 2, nx-1
+        do j = 2, ny-1
+            rho_new(i,j) = rho(i,j) - dt * ( &
+                u(i,j) * (rho(i+1,j) - rho(i-1,j)) / (2.0 * dx) + &
+                v(i,j) * (rho(i,j+1) - rho(i,j-1)) / (2.0 * dy) + &
+                rho(i,j) * ((u(i+1,j) - u(i-1,j)) / (2.0 * dx) + &
+                            (v(i,j+1) - v(i,j-1)) / (2.0 * dy)))
+        end do
+    end do
+
+    ! Apply boundary conditions (e.g., fixed density)
+    rho_new(1,:) = rho(1,:)
+    rho_new(nx,:) = rho(nx,:)
+    rho_new(:,1) = rho(:,1)
+    rho_new(:,ny) = rho(:,ny)
+end subroutine update_density
 
 end module mhd_module
