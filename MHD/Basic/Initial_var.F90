@@ -1,14 +1,13 @@
 module Initial_var
     implicit none
-    ! Public parameters
     integer, parameter :: Nx = 50, Ny = 50, Nt = 1000
     real(kind=8), parameter :: Lx = 1.0, Ly = 1.0
     real(kind=8), parameter :: Re = 100.0, Rm = 100.0
     real(kind=8), parameter :: dx = Lx / Nx, dy = Ly / Ny
-    real(kind=8), parameter :: dt_heat = 0.5 * min(dx**2, dy**2) / 1.0d5  ! Stability for Kappa=1.0d5
-    real(kind=8), parameter :: dt = min(0.001d0, dt_heat)  ! Use stable dt
+    real(kind=8), parameter :: dt_heat = 0.5 * min(dx**2, dy**2) / 1.0d5
+    real(kind=8), parameter :: dt = min(0.001d0, dt_heat)
     real(kind=8), parameter :: eta = 0.001, sigma = 1.0d-21, Kappa = 1.0d5
-    real(kind=8), allocatable :: T(:,:), rho(:,:)  ! Temperature and density
+    real(kind=8), allocatable :: T(:,:), rho(:,:)
 
     contains
 
@@ -17,13 +16,13 @@ module Initial_var
         integer :: stat
         if (allocated(T)) deallocate(T)
         if (allocated(rho)) deallocate(rho)
-        allocate(T(Nx, Ny), rho(Nx, Ny), stat=stat)
+        allocate(T(Nx,Ny), rho(Nx,Ny), stat=stat)
         if (stat /= 0) then
             print *, "Error: Failed to allocate T or rho"
             stop
         end if
         T = 0.0d0
-        rho = 1.0d0  ! Uniform density
+        rho = 1.0d0
     end subroutine initialize_variables
 
     subroutine velocity_fields(u, v, Bx, By, p)
@@ -39,7 +38,6 @@ module Initial_var
                 p(i,j) = 0.0
             end do
         end do
-        call compute_pressure(T, rho, p)  ! Initialize pressure
     end subroutine velocity_fields
 
     subroutine heat_fields(Lx, Ly)
