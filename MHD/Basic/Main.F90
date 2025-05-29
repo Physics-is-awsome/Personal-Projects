@@ -1,5 +1,5 @@
 program mhd_solver
-    use MHD_Module
+    use mhd_module
     use Initial_var
     use hdf5
     implicit none
@@ -48,8 +48,8 @@ program mhd_solver
         call update_velocity(u, v, Jz, Bx, By, p, u_new, v_new)
 
         ! Update temperature
-        call solve_heat_equation(Jz, T_new)
-        T = T_new  ! Update global temperature
+        call solve_heat_equation(Jz, Bx, By, T_new)
+        T = T_new
 
         ! Update density (continuity equation)
         call update_density(rho, u, v, rho_new)
