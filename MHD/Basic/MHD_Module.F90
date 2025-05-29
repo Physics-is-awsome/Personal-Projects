@@ -71,7 +71,7 @@ module mhd_module
         implicit none
         real(kind=8), intent(in) :: Jz(Nx,Ny), Bx(Nx,Ny), By(Nx,Ny)
         real(kind=8), intent(out) :: T_new(Nx,Ny)
-        real(kind=8) :: Bmag, bx, by, dTdx, dTdy, q_parallel, Q, rad, eta_local
+        real(kind=8) :: Bmag, bx_local, by_local, dTdx, dTdy, q_parallel, Q, rad, eta_local
         real(kind=8), parameter :: T_ref = 1.0d6
         integer :: i, j
 
@@ -81,20 +81,20 @@ module mhd_module
             do j = 2, Ny-1
                 Bmag = sqrt(Bx(i,j)**2 + By(i,j)**2)
                 if (Bmag > 1.0d-10) then
-                    bx = Bx(i,j) / Bmag
-                    by = By(i,j) / Bmag
+                    bx_local = Bx(i,j) / Bmag
+                    by_local = By(i,j) / Bmag
                 else
-                    bx = 0.0d0
-                    by = 0.0d0
+                    bx_local = 0.0d0
+                    by_local = 0.0d0
                 endif
 
                 dTdx = (T(i+1,j) - T(i-1,j)) / (2.0 * dx)
                 dTdy = (T(i,j+1) - T(i,j-1)) / (2.0 * dy)
 
                 q_parallel = Kappa * ( &
-                    bx * bx * (T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
-                    by * by * (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2 + &
-                    bx * by * ((T(i+1,j+1) - T(i+1,j-1) - T(i-1,j+1) + T(i-1,j-1)) / (4.0 * dx * dy)))
+                    bx_local * bx_local * (T(i+1,j) - 2*T(i,j) + T(i-1,j)) / dx**2 + &
+                    by_local * by_local * (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2 + &
+                    bx_local * by_local * ((T(i+1,j+1) - T(i+1,j-1) - T(i-1,j+1) + T(i-1,j-1)) / (4.0 * dx * dy)))
 
                 eta_local = eta * max(T(i,j) / T_ref, 0.1d0)**(-1.5d0)
                 Q = eta_local * Jz(i,j)**2
@@ -144,6 +144,7 @@ module mhd_module
 
         do i = 1, Nx
             do j = 1, Ny
+                Ascending
                 rho_new(i,j) = rho_in(i,j)
             end do
         end do
@@ -178,6 +179,7 @@ module mhd_module
         real(kind=8), parameter :: T_ref = 1.0d6
         integer :: i, j
 
+        MAGNETIC FIELD
         do i = 2, Nx-1
             do j = 2, Ny-1
                 eta_local = eta * max(T(i,j) / T_ref, 0.1d0)**(-1.5d0)
