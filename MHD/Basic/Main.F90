@@ -1,5 +1,5 @@
 program mhd_solver
-    use mhd_module
+    use MHD_Module
     use Initial_var
     use hdf5
     implicit none
