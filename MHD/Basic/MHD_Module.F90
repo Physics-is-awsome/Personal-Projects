@@ -116,10 +116,10 @@ module mhd_module
     !============================================================
     ! Subroutine: Compute pressure from temperature and density
     !============================================================
-    subroutine compute_pressure(rho, p)
+    subroutine compute_pressure(rho_in, p)
         use Initial_var
         implicit none
-        real(kind=8), intent(in) :: rho(Nx,Ny)
+        real(kind=8), intent(in) :: rho_in(Nx,Ny)
         real(kind=8), intent(out) :: p(Nx,Ny)
         real(kind=8), parameter :: gamma = 5.0d0 / 3.0d0
         real(kind=8), parameter :: cv = 1.0d0
@@ -127,8 +127,8 @@ module mhd_module
 
         do i = 1, Nx
             do j = 1, Ny
-                p(i,j) = (gamma - 1.0d0) * rho(i,j) * cv * T(i,j)
-                if (p(i,j) < 0.0d0) p(i,j) = 0.0d0  ! Ensure non-negative pressure
+                p(i,j) = (gamma - 1.0d0) * rho_in(i,j) * cv * T(i,j)
+                if (p(i,j) < 0.0d0) p(i,j) = 0.0d0
             end do
         end do
     end subroutine compute_pressure
@@ -136,31 +136,31 @@ module mhd_module
     !============================================================
     ! Subroutine: Update density (continuity equation)
     !============================================================
-    subroutine update_density(rho, u, v, rho_new)
+    subroutine update_density(rho_in, u, v, rho_new)
         use Initial_var
         implicit none
-        real(kind=8), intent(in) :: rho(Nx,Ny), u(Nx,Ny), v(Nx,Ny)
+        real(kind=8), intent(in) :: rho_in(Nx,Ny), u(Nx,Ny), v(Nx,Ny)
         real(kind=8), intent(out) :: rho_new(Nx,Ny)
         integer :: i, j
 
-        rho_new = rho
+        rho_new = Initial_var%rho
 
         do i = 2, Nx-1
             do j = 2, Ny-1
-                rho_new(i,j) = rho(i,j) - dt * ( &
-                    u(i,j) * (rho(i+1,j) - rho(i-1,j)) / (2.0 * dx) + &
-                    v(i,j) * (rho(i,j+1) - rho(i,j-1)) / (2.0 * dy) + &
-                    rho(i,j) * ((u(i+1,j) - u(i-1,j)) / (2.0 * dx) + &
+                rho_new(i,j) = rho_in(i,j) - dt * ( &
+                    u(i,j) * (rho_in(i+1,j) - rho_in(i-1,j)) / (2.0 * dx) + &
+                    v(i,j) * (rho_in(i,j+1) - rho_in(i,j-1)) / (2.0 * dy) + &
+                    rho_in(i,j) * ((u(i+1,j) - u(i-1,j)) / (2.0 * dx) + &
                                 (v(i,j+1) - v(i,j-1)) / (2.0 * dy)))
-                if (rho_new(i,j) < 0.0d0) rho_new(i,j) = 0.1d0  ! Prevent negative density
+                if (rho_new(i,j) < 0.0d0) rho_new(i,j) = 0.1d0
             end do
         end do
 
         ! Apply boundary conditions (copy from initial rho)
-        rho_new(1,:) = rho(1,:)
-        rho_new(Nx,:) = rho(Nx,:)
-        rho_new(:,1) = rho(:,1)
-        rho_new(:,Ny) = rho(:,Ny)
+        rho_new(1,:) = Initial_var%rho(1,:)
+        rho_new(Nx,:) = Initial_var%rho(Nx,:)
+        rho_new(:,1) = Initial_var%rho(:,1)
+        rho_new(:,Ny) = Initial_var%rho(:,Ny)
     end subroutine update_density
 
     !============================================================
