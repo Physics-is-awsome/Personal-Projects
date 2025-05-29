@@ -1,6 +1,3 @@
-!============================================================
-! Main Program: MHD Solver
-!============================================================
 program mhd_solver
     use MHD_Module
     use Initial_var
@@ -16,7 +13,8 @@ program mhd_solver
     real(kind=8) :: Jz(Nx, Ny)                       ! Current density
     real(kind=8) :: u_new(Nx, Ny), v_new(Nx, Ny)     ! Updated velocity components
     real(kind=8) :: Bx_new(Nx, Ny), By_new(Nx, Ny)   ! Updated magnetic field components
-    real(kind=8) :: T_new(Nx, Ny)                    ! Updated tempeture
+    real(kind=8) :: T_new(Nx, Ny)                    ! Updated temperature
+    real(kind=8) :: rho_new(Nx, Ny)                  ! Updated density
     integer :: stat
     integer :: n                                      ! Time step counter
 
@@ -44,34 +42,36 @@ program mhd_solver
     !============================================================
     do n = 1, Nt
         ! Compute current density (J = curl(B))
-        call compute_current(Bx, By, Jz, dx, dy)
+        call compute_current(Bx, By, Jz)
 
         ! Update velocity field (momentum equation)
-        call update_velocity(u, v, Jz, Bx, By, p, u_new, v_new, dx, dy, dt, Re)
-        
-        ! Update Tempeture 
+        call update_velocity(u, v, Jz, Bx, By, p, u_new, v_new)
+
+        ! Update temperature
         call solve_heat_equation(Jz, T_new)
+        T = T_new  ! Update global temperature
+
+        ! Update density (continuity equation)
+        call update_density(rho, u, v, rho_new)
+        rho = rho_new
+
+        ! Update pressure from temperature and density
+        call compute_pressure(rho, p)
 
         ! Update magnetic field (induction equation)
-        call update_magnetic_field(Bx, By, u, v, Bx_new, By_new, dx, dy, dt, Rm)
-
-        ! Enforce incompressibility (correct pressure)
-        call enforce_incompressibility(u_new, v_new, p, dx, dy, dt)
+        call update_magnetic_field(Bx, By, u, v, Bx_new, By_new)
 
         ! Update fields
         u = u_new
         v = v_new
         Bx = Bx_new
         By = By_new
+
         ! Output progress
         if (mod(n, 100) == 0) then
             print *, "Time step:", n
         end if
     end do
-
-    ! Final output
-    print *, "Simulation complete!"
-
 
     ! Write v to HDF5 file
     call h5fcreate_f("velocity_v.h5", H5F_ACC_TRUNC_F, file_id, error)
@@ -90,7 +90,6 @@ program mhd_solver
     call h5sclose_f(dataspace_id, error)
     call h5fclose_f(file_id, error)
     call h5close_f(error)
-
 
     ! Final output
     print *, "Simulation complete!"
