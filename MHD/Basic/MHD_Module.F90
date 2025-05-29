@@ -71,8 +71,7 @@ module mhd_module
         implicit none
         real(kind=8), intent(in) :: Jz(Nx,Ny), Bx(Nx,Ny), By(Nx,Ny)
         real(kind=8), intent(out) :: T_new(Nx,Ny)
-        real(kind=8) :: Bmag, bx, by, dTdx, dTdy, q_parallel, Q, rad
-        real(kind=8) :: eta_local
+        real(kind=8) :: Bmag, bx, by, dTdx, dTdy, q_parallel, Q, rad, eta_local
         real(kind=8), parameter :: T_ref = 1.0d6
         integer :: i, j
 
@@ -143,7 +142,11 @@ module mhd_module
         real(kind=8), intent(out) :: rho_new(Nx,Ny)
         integer :: i, j
 
-        rho_new = Initial_var%rho
+        do i = 1, Nx
+            do j = 1, Ny
+                rho_new(i,j) = rho_in(i,j)
+            end do
+        end do
 
         do i = 2, Nx-1
             do j = 2, Ny-1
@@ -156,11 +159,11 @@ module mhd_module
             end do
         end do
 
-        ! Apply boundary conditions (copy from initial rho)
-        rho_new(1,:) = Initial_var%rho(1,:)
-        rho_new(Nx,:) = Initial_var%rho(Nx,:)
-        rho_new(:,1) = Initial_var%rho(:,1)
-        rho_new(:,Ny) = Initial_var%rho(:,Ny)
+        ! Apply Dirichlet boundary conditions (copy from input rho_in)
+        rho_new(1,:) = rho_in(1,:)
+        rho_new(Nx,:) = rho_in(Nx,:)
+        rho_new(:,1) = rho_in(:,1)
+        rho_new(:,Ny) = rho_in(:,Ny)
     end subroutine update_density
 
     !============================================================
