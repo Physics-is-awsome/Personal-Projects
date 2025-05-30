@@ -18,8 +18,9 @@ program mhd_solver
     if (error /= 0) stop 'HDF5 initialization failed'
 
     ! Initialize fields
-    call velocity_fields(vel_u, vel_v, mag_Bx, mag_By, density, temp)
+    call velocity_fields(vel_u, vel_v, mag_Bx, mag_By, density)
     call compute_Bmag(mag_Bx, mag_By, B_magnitude)
+    call initialize_variables  ! Sets T and rho
 
     ! Time loop
     time = 0.0d0
