@@ -15,7 +15,8 @@ contains
                 Bphi = B0 * R0 / R
                 Bmag = sqrt(Bx(i,j)**2 + By(i,j)**2 + Bphi**2)
                 v_A = Bmag / sqrt(mu0 * rho(i,j))
-                dt_out = min(dt_out, 0.5 * min(dx / (abs(u(i,j)) + v_A), dy / (abs(v(i,j)) + v_A)))
+                dt_out = min(dt_out, 0.5 * min(dx**2, dy**2) / Kappa, &  ! Diffusion stability
+                         0.5 * min(dx / (abs(u(i,j)) + v_A), dy / (abs(v(i,j)) + v_A)))  ! Advection stability
             end do
         end do
     end subroutine compute_dt
