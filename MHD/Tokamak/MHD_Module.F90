@@ -1,7 +1,38 @@
 module mhd_module
     use Initial_var
     implicit none
-    contains
+contains
+
+    subroutine compute_dt(u, v, Bx, By, rho, dt_out)
+        real(kind=8), intent(in) :: u(Nx,Ny), v(Nx,Ny), Bx(Nx,Ny), By(Nx,Ny), rho(Nx,Ny)
+        real(kind=8), intent(out) :: dt_out
+        real(kind=8) :: v_A, R, Bphi, Bmag
+        integer :: i, j
+        dt_out = 1.0d0
+        do i = 2, Nx-1
+            do j = 2, Ny-1
+                R = Rmin + (i-1) * dx
+                Bphi = B0 * R0 / R
+                Bmag = sqrt(Bx(i,j)**2 + By(i,j)**2 + Bphi**2)
+                v_A = Bmag / sqrt(mu0 * rho(i,j))
+                dt_out = min(dt_out, 0.5 * min(dx / (abs(u(i,j)) + v_A), dy / (abs(v(i,j)) + v_A)))
+            end do
+        end do
+    end subroutine compute_dt
+
+    subroutine compute_Bmag(Bx, By, Bmag)
+        real(kind=8), intent(in) :: Bx(Nx,Ny), By(Nx,Ny)
+        real(kind=8), intent(out) :: Bmag(Nx,Ny)
+        integer :: i, j
+        real(kind=8) :: R, Bphi
+        do i = 1, Nx
+            do j = 1, Ny
+                R = Rmin + (i-1) * dx
+                Bphi = B0 * R0 / R
+                Bmag(i,j) = sqrt(Bx(i,j)**2 + By(i,j)**2 + Bphi**2)
+            end do
+        end do
+    end subroutine compute_Bmag
 
     subroutine compute_current(Bx, By, Jz)
         real(kind=8), intent(in) :: Bx(:,:), By(:,:)
@@ -48,7 +79,6 @@ module mhd_module
                     dpdy)
             end do
         end do
-        ! Conducting wall: no-slip velocity
         u_new(1,:) = 0.0d0
         u_new(Nx,:) = 0.0d0
         u_new(:,1) = 0.0d0
@@ -59,13 +89,12 @@ module mhd_module
         v_new(:,Ny) = 0.0d0
     end subroutine update_velocity
 
-    subroutine solve_heat_equation(Jz, Bx, By, T_new)
-        use Initial_var
+    subroutine solve_heat_equation(Jz, Bx, By, T, T_new)
         implicit none
-        real(kind=8), intent(in) :: Jz(Nx,Ny), Bx(Nx,Ny), By(Nx,Ny)
+        real(kind=8), intent(in) :: Jz(Nx,Ny), Bx(Nx,Ny), By(Nx,Ny), T(Nx,Ny)
         real(kind=8), intent(out) :: T_new(Nx,Ny)
         real(kind=8) :: Bmag, bx_local, by_local, dTdx, dTdy, q_parallel, Q, rad, eta_local, R
-        real(kind=8), parameter :: T_ref = 1.0d6  ! Reference temperature (K)
+        real(kind=8), parameter :: T_ref = 1.0d6
         integer :: i, j
 
         T_new = T
@@ -90,26 +119,24 @@ module mhd_module
                     by_local * by_local * (T(i,j+1) - 2*T(i,j) + T(i,j-1)) / dy**2 + &
                     bx_local * by_local * ((T(i+1,j+1) - T(i+1,j-1) - T(i-1,j+1) + T(i-1,j-1)) / (4.0 * dx * dy)))
 
-                eta_local = 5.2d-5 * (T(i,j) / T_ref)**(-1.5d0)  ! Spitzer resistivity
-                Q = eta_local * Jz(i,j)**2  ! Ohmic heating
-                rad = -sigma * T(i,j)**4  ! Bremsstrahlung (simplified)
+                eta_local = 5.2d-5 * (T(i,j) / T_ref)**(-1.5d0)
+                Q = eta_local * Jz(i,j)**2
+                rad = -sigma * T(i,j)**4
 
                 T_new(i,j) = T(i,j) + dt * (q_parallel + Q + rad)
                 if (T_new(i,j) < 0.0d0) T_new(i,j) = 0.0d0
             end do
         end do
 
-        ! Dirichlet BC: T = 0 at wall
         T_new(1,:) = 0.0d0
         T_new(Nx,:) = 0.0d0
         T_new(:,1) = 0.0d0
         T_new(:,Ny) = 0.0d0
     end subroutine solve_heat_equation
 
-    subroutine compute_pressure(rho_in, p)
-        use Initial_var
+    subroutine compute_pressure(rho_in, T, p)
         implicit none
-        real(kind=8), intent(in) :: rho_in(Nx,Ny)
+        real(kind=8), intent(in) :: rho_in(Nx,Ny), T(Nx,Ny)
         real(kind=8), intent(out) :: p(Nx,Ny)
         real(kind=8), parameter :: gamma = 5.0d0 / 3.0d0
         real(kind=8), parameter :: cv = 1.0d0
@@ -124,7 +151,6 @@ module mhd_module
     end subroutine compute_pressure
 
     subroutine update_density(rho_in, u, v, rho_new)
-        use Initial_var
         implicit none
         real(kind=8), intent(in) :: rho_in(Nx,Ny), u(Nx,Ny), v(Nx,Ny)
         real(kind=8), intent(out) :: rho_new(Nx,Ny)
@@ -149,17 +175,15 @@ module mhd_module
             end do
         end do
 
-        ! Dirichlet BC: copy rho_in at wall
         rho_new(1,:) = rho_in(1,:)
         rho_new(Nx,:) = rho_in(Nx,:)
         rho_new(:,1) = rho_in(:,1)
         rho_new(:,Ny) = rho_in(:,Ny)
     end subroutine update_density
 
-    subroutine update_magnetic_field(Bx, By, u, v, Bx_new, By_new)
-        use Initial_var
+    subroutine update_magnetic_field(Bx, By, u, v, T, Bx_new, By_new)
         implicit none
-        real(kind=8), intent(in) :: Bx(Nx,Ny), By(Nx,Ny), u(Nx,Ny), v(Nx,Ny)
+        real(kind=8), intent(in) :: Bx(Nx,Ny), By(Nx,Ny), u(Nx,Ny), v(Nx,Ny), T(Nx,Ny)
         real(kind=8), intent(out) :: Bx_new(Nx,Ny), By_new(Nx,Ny)
         real(kind=8) :: eta_local, R
         real(kind=8), parameter :: T_ref = 1.0d6
@@ -168,7 +192,7 @@ module mhd_module
         do i = 2, Nx-1
             do j = 2, Ny-1
                 R = Rmin + (i-1) * dx
-                eta_local = 5.2d-5 * (T(i,j) / T_ref)**(-1.5d0)  ! Spitzer
+                eta_local = 5.2d-5 * (T(i,j) / T_ref)**(-1.5d0)
                 Bx_new(i,j) = Bx(i,j) + dt * ( &
                     -(u(i,j) * (Bx(i+1,j) - Bx(i-1,j)) / (2.0 * dx) + &
                       v(i,j) * (Bx(i,j+1) - Bx(i,j-1)) / (2.0 * dy)) / R + &
@@ -181,7 +205,6 @@ module mhd_module
                                  (By(i,j+1) - 2.0 * By(i,j) + By(i,j-1)) / dy**2))
             end do
         end do
-        ! Conducting wall: B normal = 0
         Bx_new(1,:) = 0.0d0
         Bx_new(Nx,:) = 0.0d0
         By_new(:,1) = 0.0d0
