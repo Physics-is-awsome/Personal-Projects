@@ -20,7 +20,9 @@ program mhd_solver
     ! Initialize fields
     call velocity_fields(vel_u, vel_v, mag_Bx, mag_By, density)
     call compute_Bmag(mag_Bx, mag_By, B_magnitude)
-    call initialize_variables  ! Sets T and rho
+    call initialize_variables
+    call heat_fields
+    temp = T  ! Assuming T is the temperature array from Initial_var
 
     ! Time loop
     time = 0.0d0
