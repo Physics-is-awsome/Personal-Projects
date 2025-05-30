@@ -28,21 +28,20 @@ module Initial_var
         rho = 1.0d-6  ! Initial density ~10^20 m^-3
     end subroutine initialize_variables
 
-    subroutine velocity_fields(u, v, Bx, By, p)
-        real(kind=8), intent(out) :: u(:,:), v(:,:), Bx(:,:), By(:,:), p(:,:)
+    subroutine velocity_fields(u, v, Bx, By, rho)
+        implicit none
+        real(kind=8), intent(out) :: u(Nx,Ny), v(Nx,Ny), Bx(Nx,Ny), By(Nx,Ny), rho(Nx,Ny)
         integer :: i, j
-        real(kind=8) :: R, Z, Bphi
-
+        real(kind=8) :: R, Z
         do i = 1, Nx
             do j = 1, Ny
                 R = Rmin + (i-1) * dx
                 Z = Zmin + (j-1) * dy
-                u(i,j) = 0.0d0  ! Radial velocity
-                v(i,j) = 0.0d0  ! Vertical velocity
-                Bx(i,j) = 0.01d0 * sin(3.14159 * (R-Rmin) / Lx)  ! Simple poloidal field
-                By(i,j) = 0.01d0 * cos(3.14159 * (Z-Zmin) / Ly)
-                Bphi = B0 * R0 / R  ! Toroidal field
-                p(i,j) = 0.0d0  ! Pressure initialized later
+                u(i,j) = 0.0d0
+                v(i,j) = 0.0d0
+                Bx(i,j) = 0.01d0 * Z / sqrt((R-R0)**2 + Z**2 + 0.1)
+                By(i,j) = -0.01d0 * (R-R0) / sqrt((R-R0)**2 + Z**2 + 0.1)
+                rho(i,j) = 1.0d0 + 0.5d0 * exp(-((R-R0)**2 + Z**2)/0.5d0)
             end do
         end do
     end subroutine velocity_fields
