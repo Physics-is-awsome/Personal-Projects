@@ -1,0 +1,16 @@
+# Tokamak MHD Simulation
+2D (R, Z) resistive MHD simulation of a tokamak.
+
+## Setup
+- Environment: `mhd_env` (Conda)
+- Dependencies: `gfortran_linux-64`, `hdf5`, `zlib`, `h5py`, `matplotlib`, `pyqt`
+- Compile: `h5fc -o mhd_solver Main.F90 Initial_var.o mhd_module.o`
+- Run: `./mhd_solver`
+- Visualize: `python Graphical_output.py`
+
+## Parameters
+- `R0=6 m`, `B0=5 T` (ITER-like)
+- Grid: `Nx=50`, `Ny=50`
+
+## Outputs
+- `output.h5`: `velocity_v`, `temperature`, `density`, `B_magnitude`
