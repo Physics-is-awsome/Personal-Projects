@@ -1,4 +1,4 @@
-```python
+
 import pygame
 import math
 import random
@@ -292,4 +292,4 @@ while running:
     clock.tick(60)
 
 pygame.quit()
-```
+
