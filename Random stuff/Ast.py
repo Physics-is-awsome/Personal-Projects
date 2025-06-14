@@ -250,7 +250,7 @@ while running:
         bullet["y"] += bullet["dy"]
         bullet["life"] -= 1
         if bullet["x"] < 0 or bullet["x"] > WIDTH or bullet["y"] < 0 or bullet["y"] > HEIGHT or bullet["life"] <= 0:
-            bullet["remove"](bullet)
+            enemy_bullets.remove(bullet)
         elif math.hypot(bullet["x"] - ship["x"], bullet["y"] - ship["y"]) < ship["radius"]:
             enemy_bullets.remove(bullet)
             lives -= 1
