@@ -1,4 +1,3 @@
-
 import pygame
 import math
 import random
@@ -31,8 +30,8 @@ ship = {
 # Game objects
 bullets = []
 asteroids = []
-enemy_bullets = []  # New: Bullets fired by UFO
-ufo = None  # New: Single UFO enemy
+enemy_bullets = []
+ufo = None
 keys = set()
 
 # Game settings
@@ -43,10 +42,10 @@ ASTEROID_COUNT = 5
 ASTEROID_SPEED = 2
 ASTEROID_SIZES = [40, 20, 10]
 FRICTION = 0.99
-UFO_SPAWN_MIN = 600  # Frames (10s at 60 FPS)
-UFO_SPAWN_MAX = 1200  # Frames (20s at 60 FPS)
+UFO_SPAWN_MIN = 600
+UFO_SPAWN_MAX = 1200
 UFO_SPEED = 2
-UFO_SHOOT_INTERVAL = 120  # Frames (2s at 60 FPS)
+UFO_SHOOT_INTERVAL = 120
 UFO_BULLET_SPEED = 5
 UFO_RADIUS = 20
 
@@ -73,7 +72,7 @@ def spawn_asteroid(size, x=None, y=None):
 # Spawn UFO
 def spawn_ufo():
     global ufo
-    side = random.choice([-1, 1])  # Left or right
+    side = random.choice([-1, 1])
     x = 0 if side == 1 else WIDTH
     ufo = {
         "x": x,
@@ -82,6 +81,10 @@ def spawn_ufo():
         "radius": UFO_RADIUS,
         "shoot_timer": UFO_SHOOT_INTERVAL
     }
+
+# Initialize asteroids
+for _ in range(ASTEROID_COUNT):
+    spawn_asteroid(ASTEROID_SIZES[0])
 
 # Game loop
 running = True
@@ -141,7 +144,6 @@ while running:
         bullet["life"] -= 1
         if bullet["x"] < 0 or bullet["x"] > WIDTH or bullet["y"] < 0 or bullet["y"] > HEIGHT or bullet["life"] <= 0:
             enemy_bullets.remove(bullet)
-        # Check collision with ship
         elif math.hypot(bullet["x"] - ship["x"], bullet["y"] - ship["y"]) < ship["radius"]:
             enemy_bullets.remove(bullet)
             lives -= 1
@@ -154,7 +156,6 @@ while running:
         asteroid["y"] += asteroid["dy"]
         asteroid["x"] %= WIDTH
         asteroid["y"] %= HEIGHT
-        # Bullet collision
         for bullet in bullets[:]:
             if math.hypot(bullet["x"] - asteroid["x"], bullet["y"] - asteroid["y"]) < asteroid["radius"]:
                 bullets.remove(bullet)
@@ -165,7 +166,6 @@ while running:
                     spawn_asteroid(new_size, asteroid["x"], asteroid["y"])
                 asteroids.remove(asteroid)
                 break
-        # Ship collision
         if math.hypot(ship["x"] - asteroid["x"], ship["y"] - asteroid["y"]) < ship["radius"] + asteroid["radius"]:
             lives -= 1
             ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
@@ -174,12 +174,11 @@ while running:
                 running = False
 
     # Update UFO
-    if ufo:
+    if ufo is not None:
         ufo["x"] += ufo["dx"]
         if ufo["x"] < -ufo["radius"] or ufo["x"] > WIDTH + ufo["radius"]:
             ufo = None
         else:
-            # Shoot at player
             ufo["shoot_timer"] -= 1
             if ufo["shoot_timer"] <= 0:
                 angle = math.atan2(ship["y"] - ufo["y"], ship["x"] - ufo["x"])
@@ -191,15 +190,13 @@ while running:
                     "life": 60
                 })
                 ufo["shoot_timer"] = UFO_SHOOT_INTERVAL
-            # Check collision with player bullets
             for bullet in bullets[:]:
                 if math.hypot(bullet["x"] - ufo["x"], bullet["y"] - ufo["y"]) < ufo["radius"]:
                     bullets.remove(bullet)
                     score += 1000
                     ufo = None
                     break
-            # Check collision with ship
-            if math.hypot(ship["x"] - ufo["x"], ship["y"] - ufo["y"]) < ship["radius"] + ufo["radius"]:
+            if ufo is not None and math.hypot(ship["x"] - ufo["x"], ship["y"] - ufo["y"]) < ship["radius"] + ufo["radius"]:
                 lives -= 1
                 ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
                 ship["dx"], ship["dy"] = 0, 0
@@ -209,13 +206,12 @@ while running:
 
     # Spawn UFO
     ufo_spawn_timer -= 1
-    if ufo_spawn_timer <= 0 and not ufo:
+    if ufo_spawn_timer <= 0 and ufo is None:
         spawn_ufo()
         ufo_spawn_timer = random.randint(UFO_SPAWN_MIN, UFO_SPAWN_MAX)
 
     # Draw
     screen.fill(BLACK)
-    # Draw ship
     ship_points = [
         (ship["x"] + math.cos(math.radians(ship["angle"])) * ship["radius"], ship["y"] - math.sin(math.radians(ship["angle"])) * ship["radius"]),
         (ship["x"] + math.cos(math.radians(ship["angle"] + 140)) * ship["radius"], ship["y"] - math.sin(math.radians(ship["angle"] + 140)) * ship["radius"]),
@@ -230,20 +226,16 @@ while running:
         pygame.draw.line(screen, ORANGE, ship_points[1], thrust_point, 2)
         pygame.draw.line(screen, ORANGE, ship_points[2], thrust_point, 2)
 
-    # Draw bullets
     for bullet in bullets:
         pygame.draw.circle(screen, RED, (int(bullet["x"]), int(bullet["y"])), 2)
 
-    # Draw enemy bullets
     for bullet in enemy_bullets:
         pygame.draw.circle(screen, GREEN, (int(bullet["x"]), int(bullet["y"])), 2)
 
-    # Draw asteroids
     for asteroid in asteroids:
         pygame.draw.circle(screen, WHITE, (int(asteroid["x"]), int(asteroid["y"])), asteroid["radius"], 1)
 
-    # Draw UFO
-    if ufo:
+    if ufo is not None:
         ufo_points = [
             (ufo["x"] - ufo["radius"], ufo["y"] + ufo["radius"]),
             (ufo["x"] + ufo["radius"], ufo["y"] + ufo["radius"]),
@@ -254,7 +246,6 @@ while running:
         ]
         pygame.draw.polygon(screen, WHITE, ufo_points, 1)
 
-    # Draw HUD
     score_text = font.render(f"Score: {score}", True, WHITE)
     lives_text = font.render(f"Lives: {lives}", True, WHITE)
     screen.blit(score_text, (10, 10))
@@ -268,9 +259,8 @@ while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-                    lives = 1  # Exit inner loop
+                    lives = 1
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                    # Reset game
                     ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
                     ship["dx"], ship["dy"] = 0, 0
                     ship["angle"] = 0
@@ -292,4 +282,3 @@ while running:
     clock.tick(60)
 
 pygame.quit()
-
