@@ -53,25 +53,64 @@ keys = set()
 SHIP_SPEED = 0.2
 ROTATION_SPEED = 5
 BULLET_SPEED = 7
-ASTEROID_COUNT = 4
 ASTEROID_SPEED = 2
 ASTEROID_SIZES = [40, 20, 10]
 FRICTION = 0.99
-UFO_SPAWN_MIN = 600
-UFO_SPAWN_MAX = 1200
 UFO_BULLET_SPEED = 5
 UFO_SHOOT_INTERVAL = 120
 
+# Game modes
+GAME_MODES = {
+    "classic": {
+        "name": "Classic Mode",
+        "initial_asteroids": 4,
+        "asteroids_per_wave": lambda level: 4 + level - 1,
+        "ufo_spawn_min": 600,
+        "ufo_spawn_max": 1200,
+        "lives": 3,
+        "score_multiplier": 1,
+        "shot_limit": 3,
+        "shot_cooldown": 30,
+        "time_limit": None
+    },
+    "survival": {
+        "name": "Survival Mode",
+        "initial_asteroids": 6,
+        "asteroids_per_wave": lambda level: 6,
+        "ufo_spawn_min": 300,
+        "ufo_spawn_max": 600,
+        "lives": 1,
+        "score_multiplier": 2,
+        "shot_limit": None,
+        "shot_cooldown": 0,
+        "time_limit": None
+    },
+    "time_attack": {
+        "name": "Time Attack Mode",
+        "initial_asteroids": 8,
+        "asteroids_per_wave": lambda level: 8,
+        "ufo_spawn_min": 300,
+        "ufo_spawn_max": 600,
+        "lives": float('inf'),
+        "score_multiplier": 1,
+        "shot_limit": 5,
+        "shot_cooldown": 18,
+        "time_limit": 3600
+    }
+}
+current_mode = "classic"
+
 # Game state
 score = 0
-lives = 3
+lives = GAME_MODES[current_mode]["lives"]
 level = 1
 high_score = 0
-ufo_spawn_timer = random.randint(UFO_SPAWN_MIN, UFO_SPAWN_MAX)
+ufo_spawn_timer = random.randint(GAME_MODES[current_mode]["ufo_spawn_min"], GAME_MODES[current_mode]["ufo_spawn_max"])
 game_state = "menu"
 shot_count = 0
 shoot_cooldown = 0
 shot_reset_timer = 60
+timer = GAME_MODES[current_mode]["time_limit"]
 font = pygame.font.SysFont("arial", 24)
 
 # Load high score
@@ -87,6 +126,28 @@ def save_high_score():
         high_score = score
         with open("highscore.json", "w") as f:
             json.dump({"high_score": high_score}, f)
+
+# Reset game
+def reset_game():
+    global ship, asteroids, bullets, enemy_bullets, particles, ufo, score, lives, level, ufo_spawn_timer, shot_count, shoot_cooldown, shot_reset_timer, timer
+    ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
+    ship["dx"], ship["dy"] = 0, 0
+    ship["angle"] = 0
+    asteroids.clear()
+    bullets.clear()
+    enemy_bullets.clear()
+    particles.clear()
+    ufo = None
+    score = 0
+    lives = GAME_MODES[current_mode]["lives"]
+    level = 1
+    ufo_spawn_timer = random.randint(GAME_MODES[current_mode]["ufo_spawn_min"], GAME_MODES[current_mode]["ufo_spawn_max"])
+    shot_count = 0
+    shoot_cooldown = 0
+    shot_reset_timer = 60
+    timer = GAME_MODES[current_mode]["time_limit"]
+    for _ in range(GAME_MODES[current_mode]["initial_asteroids"]):
+        spawn_asteroid(ASTEROID_SIZES[0])
 
 # Spawn asteroids
 def spawn_asteroid(size, x=None, y=None):
@@ -131,7 +192,7 @@ def spawn_ufo():
         ufo_hum_large.play(-1)
 
 # Initialize asteroids
-for _ in range(ASTEROID_COUNT):
+for _ in range(GAME_MODES[current_mode]["initial_asteroids"]):
     spawn_asteroid(ASTEROID_SIZES[0])
 
 # Game loop
@@ -142,27 +203,22 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
-            if game_state == "menu" and event.key == pygame.K_s:
-                game_state = "playing"
+            if game_state == "menu":
+                if event.key == pygame.K_1:
+                    current_mode = "classic"
+                    game_state = "playing"
+                    reset_game()
+                elif event.key == pygame.K_2:
+                    current_mode = "survival"
+                    game_state = "playing"
+                    reset_game()
+                elif event.key == pygame.K_3:
+                    current_mode = "time_attack"
+                    game_state = "playing"
+                    reset_game()
             elif game_state == "game_over" and event.key == pygame.K_r:
                 game_state = "playing"
-                ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
-                ship["dx"], ship["dy"] = 0, 0
-                ship["angle"] = 0
-                asteroids.clear()
-                bullets.clear()
-                enemy_bullets.clear()
-                particles.clear()
-                ufo = None
-                score = 0
-                lives = 3
-                level = 1
-                ufo_spawn_timer = random.randint(UFO_SPAWN_MIN, UFO_SPAWN_MAX)
-                shot_count = 0
-                shoot_cooldown = 0
-                shot_reset_timer = 60
-                for _ in range(ASTEROID_COUNT):
-                    spawn_asteroid(ASTEROID_SIZES[0])
+                reset_game()
             elif game_state == "game_over" and event.key == pygame.K_q:
                 running = False
             keys.add(event.key)
@@ -172,10 +228,10 @@ while running:
     if game_state == "menu":
         screen.fill(BLACK)
         title_text = font.render("Asteroids", True, WHITE)
-        start_text = font.render("Press S to Start", True, WHITE)
+        start_text = font.render("Press 1: Classic, 2: Survival, 3: Time Attack", True, WHITE)
         instructions = font.render("Left/Right: Rotate, Up: Thrust, Space: Shoot", True, WHITE)
         screen.blit(title_text, (WIDTH // 2 - 50, HEIGHT // 2 - 50))
-        screen.blit(start_text, (WIDTH // 2 - 70, HEIGHT // 2))
+        screen.blit(start_text, (WIDTH // 2 - 150, HEIGHT // 2))
         screen.blit(instructions, (WIDTH // 2 - 150, HEIGHT // 2 + 50))
         pygame.display.flip()
         continue
@@ -218,21 +274,22 @@ while running:
     ship["y"] %= HEIGHT
 
     # Shoot
-    if pygame.K_SPACE in keys and not space_pressed and shoot_cooldown <= 0 and shot_count < 3:
-        bullets.append({
-            "x": ship["x"] + math.cos(math.radians(ship["angle"])) * ship["radius"],
-            "y": ship["y"] - math.sin(math.radians(ship["angle"])) * ship["radius"],
-            "dx": math.cos(math.radians(ship["angle"])) * BULLET_SPEED + ship["dx"],
-            "dy": -math.sin(math.radians(ship["angle"])) * BULLET_SPEED + ship["dy"],
-            "life": 60
-        })
-        if shoot_sound:
-            shoot_sound.play()
-        shot_count += 1
-        shot_reset_timer = 60
-        if shot_count >= 3:
-            shoot_cooldown = 30
-        space_pressed = True
+    if pygame.K_SPACE in keys and not space_pressed and shoot_cooldown <= 0:
+        if GAME_MODES[current_mode]["shot_limit"] is None or shot_count < GAME_MODES[current_mode]["shot_limit"]:
+            bullets.append({
+                "x": ship["x"] + math.cos(math.radians(ship["angle"])) * ship["radius"],
+                "y": ship["y"] - math.sin(math.radians(ship["angle"])) * ship["radius"],
+                "dx": math.cos(math.radians(ship["angle"])) * BULLET_SPEED + ship["dx"],
+                "dy": -math.sin(math.radians(ship["angle"])) * BULLET_SPEED + ship["dy"],
+                "life": 60
+            })
+            if shoot_sound:
+                shoot_sound.play()
+            shot_count += 1
+            shot_reset_timer = 60
+            if GAME_MODES[current_mode]["shot_limit"] and shot_count >= GAME_MODES[current_mode]["shot_limit"]:
+                shoot_cooldown = GAME_MODES[current_mode]["shot_cooldown"]
+            space_pressed = True
     if pygame.K_SPACE not in keys:
         space_pressed = False
 
@@ -256,7 +313,7 @@ while running:
             lives -= 1
             ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
             ship["dx"], ship["dy"] = 0, 0
-            if lives <= 0:
+            if lives <= 0 and current_mode != "time_attack":
                 game_state = "game_over"
 
     # Update asteroids
@@ -268,7 +325,7 @@ while running:
         for bullet in bullets[:]:
             if math.hypot(bullet["x"] - asteroid["x"], bullet["y"] - asteroid["y"]) < asteroid["radius"]:
                 bullets.remove(bullet)
-                score += 100 * (ASTEROID_SIZES.index(asteroid["radius"]) + 1)
+                score += 100 * (ASTEROID_SIZES.index(asteroid["radius"]) + 1) * GAME_MODES[current_mode]["score_multiplier"]
                 if explosion_sound:
                     explosion_sound.play()
                 for _ in range(10):
@@ -289,7 +346,7 @@ while running:
             lives -= 1
             ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
             ship["dx"], ship["dy"] = 0, 0
-            if lives <= 0:
+            if lives <= 0 and current_mode != "time_attack":
                 game_state = "game_over"
 
     # Update UFO
@@ -323,7 +380,7 @@ while running:
             for bullet in bullets[:]:
                 if math.hypot(bullet["x"] - ufo["x"], bullet["y"] - ufo["y"]) < ufo["radius"]:
                     bullets.remove(bullet)
-                    score += ufo["points"]
+                    score += ufo["points"] * GAME_MODES[current_mode]["score_multiplier"]
                     if explosion_sound:
                         explosion_sound.play()
                     for _ in range(15):
@@ -349,19 +406,19 @@ while running:
                     ufo_hum_small.stop()
                 if ufo_hum_large:
                     ufo_hum_large.stop()
-                if lives <= 0:
+                if lives <= 0 and current_mode != "time_attack":
                     game_state = "game_over"
 
     # Spawn UFO
     ufo_spawn_timer -= 1
     if ufo_spawn_timer <= 0 and ufo is None:
         spawn_ufo()
-        ufo_spawn_timer = random.randint(UFO_SPAWN_MIN, UFO_SPAWN_MAX)
+        ufo_spawn_timer = random.randint(GAME_MODES[current_mode]["ufo_spawn_min"], GAME_MODES[current_mode]["ufo_spawn_max"])
 
-    # Check for level progression
+    # Check for wave progression
     if len(asteroids) == 0:
         level += 1
-        asteroid_count = ASTEROID_COUNT + level - 1
+        asteroid_count = GAME_MODES[current_mode]["asteroids_per_wave"](level)
         for _ in range(asteroid_count):
             spawn_asteroid(ASTEROID_SIZES[0])
 
@@ -372,6 +429,10 @@ while running:
         shot_reset_timer -= 1
     else:
         shot_count = 0
+    if timer is not None:
+        timer -= 1
+        if timer <= 0:
+            game_state = "game_over"
 
     # Update particles
     for particle in particles[:]:
@@ -422,16 +483,20 @@ while running:
         pygame.draw.circle(screen, WHITE, (int(particle["x"]), int(particle["y"])), 2)
 
     score_text = font.render(f"Score: {score}", True, WHITE)
-    lives_text = font.render(f"Lives: {lives}", True, WHITE)
+    lives_text = font.render(f"Lives: {int(lives) if lives != float('inf') else '-'}", True, WHITE)
     level_text = font.render(f"Level: {level}", True, WHITE)
-    shots_text = font.render(f"Shots: {3 - shot_count}", True, WHITE)
+    mode_text = font.render(GAME_MODES[current_mode]["name"], True, WHITE)
+    timer_text = font.render(f"Time: {int(timer / 60) if timer is not None else '-'}", True, WHITE)
+    shots_text = font.render(f"Shots: {GAME_MODES[current_mode]['shot_limit'] - shot_count if GAME_MODES[current_mode]['shot_limit'] else '-'}", True, WHITE)
     screen.blit(score_text, (10, 10))
     screen.blit(lives_text, (10, 40))
     screen.blit(level_text, (10, 70))
-    screen.blit(shots_text, (10, 100))
+    screen.blit(mode_text, (10, 130))
+    screen.blit(timer_text, (10, 160))
+    screen.blit(shots_text, (10, 190))
     if shoot_cooldown > 0:
         cooldown_text = font.render("Cool-down!", True, RED)
-        screen.blit(cooldown_text, (10, 130))
+        screen.blit(cooldown_text, (10, 220))
 
     pygame.display.flip()
     clock.tick(60)
