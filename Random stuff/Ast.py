@@ -1,6 +1,7 @@
 import pygame
 import math
 import random
+import json
 
 # Initialize Pygame
 pygame.init()
@@ -15,6 +16,19 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 ORANGE = (255, 165, 0)
 GREEN = (0, 255, 0)
+
+# Load sounds (comment out if files are missing)
+try:
+    pygame.mixer.init()
+    shoot_sound = pygame.mixer.Sound("shoot.wav")
+    explosion_sound = pygame.mixer.Sound("explosion.wav")
+    ufo_hum_small = pygame.mixer.Sound("ufo_hum_small.wav")
+    ufo_hum_large = pygame.mixer.Sound("ufo_hum_large.wav")
+    # pygame.mixer.music.load("background_beat.wav")
+    # pygame.mixer.music.play(-1)  # Uncomment to enable background music
+except:
+    print("Sound files missing; running without audio")
+    shoot_sound = explosion_sound = ufo_hum_small = ufo_hum_large = None
 
 # Ship
 ship = {
@@ -31,6 +45,7 @@ ship = {
 bullets = []
 asteroids = []
 enemy_bullets = []
+particles = []
 ufo = None
 keys = set()
 
@@ -38,31 +53,48 @@ keys = set()
 SHIP_SPEED = 0.2
 ROTATION_SPEED = 5
 BULLET_SPEED = 7
-ASTEROID_COUNT = 5
+ASTEROID_COUNT = 4  # Start with fewer asteroids, increase per level
 ASTEROID_SPEED = 2
 ASTEROID_SIZES = [40, 20, 10]
 FRICTION = 0.99
-UFO_SPAWN_MIN = 600
-UFO_SPAWN_MAX = 1200
-UFO_SPEED = 2
-UFO_SHOOT_INTERVAL = 120
+UFO_SPAWN_MIN = 600  # 10s at 60 FPS
+UFO_SPAWN_MAX = 1200  # 20s at 60 FPS
 UFO_BULLET_SPEED = 5
-UFO_RADIUS = 20
+UFO_SHOOT_INTERVAL = 120  # 2s at 60 FPS
 
 # Game state
 score = 0
 lives = 3
+level = 1
+high_score = 0
 ufo_spawn_timer = random.randint(UFO_SPAWN_MIN, UFO_SPAWN_MAX)
+game_state = "menu"
 font = pygame.font.SysFont("arial", 24)
+
+# Load high score
+try:
+    with open("highscore.json", "r") as f:
+        high_score = json.load(f).get("high_score", 0)
+except:
+    high_score = 0
+
+def save_high_score():
+    global high_score
+    if score > high_score:
+        high_score = score
+        with open("highscore.json", "w") as f:
+            json.dump({"high_score": high_score}, f)
 
 # Spawn asteroids
 def spawn_asteroid(size, x=None, y=None):
     asteroid = {
         "x": x or random.randint(0, WIDTH),
         "y": y or random.randint(0, HEIGHT),
-        "dx": (random.random() - 0.5) * ASTEROID_SPEED,
-        "dy": (random.random() - 0.5) * ASTEROID_SPEED,
-        "radius": size
+        "dx": (random.random() - 0.5) * ASTEROID_SPEED * (1 + (level - 1) * 0.1),
+        "dy": (random.random() - 0.5) * ASTEROID_SPEED * (1 + (level - 1) * 0.1),
+        "radius": size,
+        "vertices": random.randint(6, 12),
+        "offsets": [random.uniform(0.8, 1.2) for _ in range(random.randint(6, 12))]
     }
     if math.hypot(asteroid["x"] - ship["x"], asteroid["y"] - ship["y"]) < asteroid["radius"] + ship["radius"] + 50:
         asteroid["x"] = random.randint(0, WIDTH)
@@ -72,15 +104,27 @@ def spawn_asteroid(size, x=None, y=None):
 # Spawn UFO
 def spawn_ufo():
     global ufo
+    ufo_type = random.choice(["small", "large"])
+    radius = 15 if ufo_type == "small" else 25
+    speed = 3 if ufo_type == "small" else 1.5
+    points = 2000 if ufo_type == "small" else 1000
+    shoot_interval = 60 if ufo_type == "small" else 120
     side = random.choice([-1, 1])
-    x = 0 if side == 1 else WIDTH
     ufo = {
-        "x": x,
+        "x": 0 if side == 1 else WIDTH,
         "y": random.randint(100, HEIGHT - 100),
-        "dx": side * UFO_SPEED,
-        "radius": UFO_RADIUS,
-        "shoot_timer": UFO_SHOOT_INTERVAL
+        "dx": side * speed,
+        "dy": 0,
+        "radius": radius,
+        "shoot_timer": shoot_interval,
+        "type": ufo_type,
+        "points": points,
+        "change_direction_timer": random.randint(30, 90)
     }
+    if ufo["type"] == "small" and ufo_hum_small:
+        ufo_hum_small.play(-1)
+    elif ufo_hum_large:
+        ufo_hum_large.play(-1)
 
 # Initialize asteroids
 for _ in range(ASTEROID_COUNT):
@@ -94,9 +138,50 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
+            if game_state == "menu" and event.key == pygame.K_s:
+                game_state = "playing"
+            elif game_state == "game_over" and event.key == pygame.K_r:
+                game_state = "playing"
+                ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
+                ship["dx"], ship["dy"] = 0, 0
+                ship["angle"] = 0
+                asteroids.clear()
+                bullets.clear()
+                enemy_bullets.clear()
+                particles.clear()
+                ufo = None
+                score = 0
+                lives = 3
+                level = 1
+                ufo_spawn_timer = random.randint(UFO_SPAWN_MIN, UFO_SPAWN_MAX)
+                for _ in range(ASTEROID_COUNT):
+                    spawn_asteroid(ASTEROID_SIZES[0])
+            elif game_state == "game_over" and event.key == pygame.K_q:
+                running = False
             keys.add(event.key)
         elif event.type == pygame.KEYUP:
             keys.discard(event.key)
+
+    if game_state == "menu":
+        screen.fill(BLACK)
+        title_text = font.render("Asteroids", True, WHITE)
+        start_text = font.render("Press S to Start", True, WHITE)
+        instructions = font.render("Left/Right: Rotate, Up: Thrust, Space: Shoot", True, WHITE)
+        screen.blit(title_text, (WIDTH // 2 - 50, HEIGHT // 2 - 50))
+        screen.blit(start_text, (WIDTH // 2 - 70, HEIGHT // 2))
+        screen.blit(instructions, (WIDTH // 2 - 150, HEIGHT // 2 + 50))
+        pygame.display.flip()
+        continue
+
+    if game_state == "game_over":
+        save_high_score()
+        screen.fill(BLACK)
+        game_over_text = font.render(f"Game Over! Score: {score} High: {high_score}", True, WHITE)
+        restart_text = font.render("Press R to Restart, Q to Quit", True, WHITE)
+        screen.blit(game_over_text, (WIDTH // 2 - 150, HEIGHT // 2))
+        screen.blit(restart_text, (WIDTH // 2 - 120, HEIGHT // 2 + 50))
+        pygame.display.flip()
+        continue
 
     # Update ship
     if pygame.K_LEFT in keys:
@@ -107,6 +192,15 @@ while running:
     if ship["thrusting"]:
         ship["dx"] += math.cos(math.radians(ship["angle"])) * SHIP_SPEED
         ship["dy"] -= math.sin(math.radians(ship["angle"])) * SHIP_SPEED
+        for _ in range(2):
+            angle = math.radians(ship["angle"] + 180 + random.uniform(-20, 20))
+            particles.append({
+                "x": ship["x"] + math.cos(math.radians(ship["angle"] + 180)) * ship["radius"],
+                "y": ship["y"] - math.sin(math.radians(ship["angle"] + 180)) * ship["radius"],
+                "dx": math.cos(angle) * 3 + ship["dx"],
+                "dy": -math.sin(angle) * 3 + ship["dy"],
+                "life": 15
+            })
     ship["x"] += ship["dx"]
     ship["y"] += ship["dy"]
     ship["dx"] *= FRICTION
@@ -125,6 +219,8 @@ while running:
             "dy": -math.sin(math.radians(ship["angle"])) * BULLET_SPEED + ship["dy"],
             "life": 60
         })
+        if shoot_sound:
+            shoot_sound.play()
         space_pressed = True
     if pygame.K_SPACE not in keys:
         space_pressed = False
@@ -147,8 +243,10 @@ while running:
         elif math.hypot(bullet["x"] - ship["x"], bullet["y"] - ship["y"]) < ship["radius"]:
             enemy_bullets.remove(bullet)
             lives -= 1
+            ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
+            ship["dx"], ship["dy"] = 0, 0
             if lives <= 0:
-                running = False
+                game_state = "game_over"
 
     # Update asteroids
     for asteroid in asteroids[:]:
@@ -160,6 +258,16 @@ while running:
             if math.hypot(bullet["x"] - asteroid["x"], bullet["y"] - asteroid["y"]) < asteroid["radius"]:
                 bullets.remove(bullet)
                 score += 100 * (ASTEROID_SIZES.index(asteroid["radius"]) + 1)
+                if explosion_sound:
+                    explosion_sound.play()
+                for _ in range(10):
+                    particles.append({
+                        "x": asteroid["x"],
+                        "y": asteroid["y"],
+                        "dx": (random.random() - 0.5) * 5,
+                        "dy": (random.random() - 0.5) * 5,
+                        "life": 30
+                    })
                 if asteroid["radius"] > ASTEROID_SIZES[2]:
                     new_size = ASTEROID_SIZES[ASTEROID_SIZES.index(asteroid["radius"]) + 1]
                     spawn_asteroid(new_size, asteroid["x"], asteroid["y"])
@@ -171,17 +279,28 @@ while running:
             ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
             ship["dx"], ship["dy"] = 0, 0
             if lives <= 0:
-                running = False
+                game_state = "game_over"
 
     # Update UFO
     if ufo is not None:
         ufo["x"] += ufo["dx"]
+        ufo["y"] += ufo["dy"]
+        ufo["change_direction_timer"] -= 1
+        if ufo["change_direction_timer"] <= 0:
+            ufo["dy"] = (random.random() - 0.5) * 2
+            ufo["change_direction_timer"] = random.randint(30, 90)
         if ufo["x"] < -ufo["radius"] or ufo["x"] > WIDTH + ufo["radius"]:
             ufo = None
+            if ufo_hum_small:
+                ufo_hum_small.stop()
+            if ufo_hum_large:
+                ufo_hum_large.stop()
         else:
             ufo["shoot_timer"] -= 1
             if ufo["shoot_timer"] <= 0:
                 angle = math.atan2(ship["y"] - ufo["y"], ship["x"] - ufo["x"])
+                if ufo["type"] == "small":
+                    angle += random.uniform(-0.2, 0.2)  # Less accurate for small UFO
                 enemy_bullets.append({
                     "x": ufo["x"],
                     "y": ufo["y"],
@@ -193,22 +312,55 @@ while running:
             for bullet in bullets[:]:
                 if math.hypot(bullet["x"] - ufo["x"], bullet["y"] - ufo["y"]) < ufo["radius"]:
                     bullets.remove(bullet)
-                    score += 1000
+                    score += ufo["points"]
+                    if explosion_sound:
+                        explosion_sound.play()
+                    for _ in range(15):
+                        particles.append({
+                            "x": ufo["x"],
+                            "y": ufo["y"],
+                            "dx": (random.random() - 0.5) * 5,
+                            "dy": (random.random() - 0.5) * 5,
+                            "life": 30
+                        })
                     ufo = None
+                    if ufo_hum_small:
+                        ufo_hum_small.stop()
+                    if ufo_hum_large:
+                        ufo_hum_large.stop()
                     break
             if ufo is not None and math.hypot(ship["x"] - ufo["x"], ship["y"] - ufo["y"]) < ship["radius"] + ufo["radius"]:
                 lives -= 1
                 ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
                 ship["dx"], ship["dy"] = 0, 0
                 ufo = None
+                if ufo_hum_small:
+                    ufo_hum_small.stop()
+                if ufo_hum_large:
+                    ufo_hum_large.stop()
                 if lives <= 0:
-                    running = False
+                    game_state = "game_over"
 
     # Spawn UFO
     ufo_spawn_timer -= 1
     if ufo_spawn_timer <= 0 and ufo is None:
         spawn_ufo()
         ufo_spawn_timer = random.randint(UFO_SPAWN_MIN, UFO_SPAWN_MAX)
+
+    # Check for level progression
+    if len(asteroids) == 0:
+        level += 1
+        asteroid_count = ASTEROID_COUNT + level - 1
+        for _ in range(asteroid_count):
+            spawn_asteroid(ASTEROID_SIZES[0])
+
+    # Update particles
+    for particle in particles[:]:
+        particle["x"] += particle["dx"]
+        particle["y"] += particle["dy"]
+        particle["life"] -= 1
+        if particle["life"] <= 0:
+            particles.remove(particle)
 
     # Draw
     screen.fill(BLACK)
@@ -218,13 +370,6 @@ while running:
         (ship["x"] + math.cos(math.radians(ship["angle"] - 140)) * ship["radius"], ship["y"] - math.sin(math.radians(ship["angle"] - 140)) * ship["radius"])
     ]
     pygame.draw.polygon(screen, WHITE, ship_points, 1)
-    if ship["thrusting"]:
-        thrust_point = (
-            ship["x"] + math.cos(math.radians(ship["angle"] + 180)) * ship["radius"] * 1.5,
-            ship["y"] - math.sin(math.radians(ship["angle"] + 180)) * ship["radius"] * 1.5
-        )
-        pygame.draw.line(screen, ORANGE, ship_points[1], thrust_point, 2)
-        pygame.draw.line(screen, ORANGE, ship_points[2], thrust_point, 2)
 
     for bullet in bullets:
         pygame.draw.circle(screen, RED, (int(bullet["x"]), int(bullet["y"])), 2)
@@ -233,50 +378,36 @@ while running:
         pygame.draw.circle(screen, GREEN, (int(bullet["x"]), int(bullet["y"])), 2)
 
     for asteroid in asteroids:
-        pygame.draw.circle(screen, WHITE, (int(asteroid["x"]), int(asteroid["y"])), asteroid["radius"], 1)
+        points = []
+        for i in range(asteroid["vertices"]):
+            angle = i * 2 * math.pi / asteroid["vertices"]
+            radius = asteroid["radius"] * asteroid["offsets"][i]
+            x = asteroid["x"] + math.cos(angle) * radius
+            y = asteroid["y"] + math.sin(angle) * radius
+            points.append((x, y))
+        pygame.draw.polygon(screen, WHITE, points, 1)
 
     if ufo is not None:
+        scale = 1.5 if ufo["type"] == "large" else 1
         ufo_points = [
-            (ufo["x"] - ufo["radius"], ufo["y"] + ufo["radius"]),
-            (ufo["x"] + ufo["radius"], ufo["y"] + ufo["radius"]),
-            (ufo["x"] + ufo["radius"] * 1.5, ufo["y"]),
-            (ufo["x"] + ufo["radius"], ufo["y"] - ufo["radius"]),
-            (ufo["x"] - ufo["radius"], ufo["y"] - ufo["radius"]),
-            (ufo["x"] - ufo["radius"] * 1.5, ufo["y"])
+            (ufo["x"] - ufo["radius"] * scale, ufo["y"] + ufo["radius"] * scale),
+            (ufo["x"] + ufo["radius"] * scale, ufo["y"] + ufo["radius"] * scale),
+            (ufo["x"] + ufo["radius"] * 1.5 * scale, ufo["y"]),
+            (ufo["x"] + ufo["radius"] * scale, ufo["y"] - ufo["radius"] * scale),
+            (ufo["x"] - ufo["radius"] * scale, ufo["y"] - ufo["radius"] * scale),
+            (ufo["x"] - ufo["radius"] * 1.5 * scale, ufo["y"])
         ]
         pygame.draw.polygon(screen, WHITE, ufo_points, 1)
 
+    for particle in particles:
+        pygame.draw.circle(screen, WHITE, (int(particle["x"]), int(particle["y"])), 2)
+
     score_text = font.render(f"Score: {score}", True, WHITE)
     lives_text = font.render(f"Lives: {lives}", True, WHITE)
+    level_text = font.render(f"Level: {level}", True, WHITE)
     screen.blit(score_text, (10, 10))
     screen.blit(lives_text, (10, 40))
-
-    if lives <= 0:
-        game_over_text = font.render("Game Over! Press R to Restart", True, WHITE)
-        screen.blit(game_over_text, (WIDTH // 2 - 100, HEIGHT // 2))
-        pygame.display.flip()
-        while lives <= 0:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-                    lives = 1
-                elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                    ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
-                    ship["dx"], ship["dy"] = 0, 0
-                    ship["angle"] = 0
-                    asteroids.clear()
-                    bullets.clear()
-                    enemy_bullets.clear()
-                    ufo = None
-                    score = 0
-                    lives = 3
-                    ufo_spawn_timer = random.randint(UFO_SPAWN_MIN, UFO_SPAWN_MAX)
-                    for _ in range(ASTEROID_COUNT):
-                        spawn_asteroid(ASTEROID_SIZES[0])
-                    break
-            if not running:
-                break
-        continue
+    screen.blit(level_text, (10, 70))
 
     pygame.display.flip()
     clock.tick(60)
