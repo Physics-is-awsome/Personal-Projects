@@ -69,6 +69,9 @@ level = 1
 high_score = 0
 ufo_spawn_timer = random.randint(UFO_SPAWN_MIN, UFO_SPAWN_MAX)
 game_state = "menu"
+shot_count = 0
+shoot_cooldown = 0
+shot_reset_timer = 60
 font = pygame.font.SysFont("arial", 24)
 
 # Load high score
@@ -155,6 +158,9 @@ while running:
                 lives = 3
                 level = 1
                 ufo_spawn_timer = random.randint(UFO_SPAWN_MIN, UFO_SPAWN_MAX)
+                shot_count = 0
+                shoot_cooldown = 0
+                shot_reset_timer = 60
                 for _ in range(ASTEROID_COUNT):
                     spawn_asteroid(ASTEROID_SIZES[0])
             elif game_state == "game_over" and event.key == pygame.K_q:
@@ -212,7 +218,7 @@ while running:
     ship["y"] %= HEIGHT
 
     # Shoot
-    if pygame.K_SPACE in keys and not space_pressed:
+    if pygame.K_SPACE in keys and not space_pressed and shoot_cooldown <= 0 and shot_count < 3:
         bullets.append({
             "x": ship["x"] + math.cos(math.radians(ship["angle"])) * ship["radius"],
             "y": ship["y"] - math.sin(math.radians(ship["angle"])) * ship["radius"],
@@ -222,6 +228,10 @@ while running:
         })
         if shoot_sound:
             shoot_sound.play()
+        shot_count += 1
+        shot_reset_timer = 60
+        if shot_count >= 3:
+            shoot_cooldown = 30
         space_pressed = True
     if pygame.K_SPACE not in keys:
         space_pressed = False
@@ -240,7 +250,7 @@ while running:
         bullet["y"] += bullet["dy"]
         bullet["life"] -= 1
         if bullet["x"] < 0 or bullet["x"] > WIDTH or bullet["y"] < 0 or bullet["y"] > HEIGHT or bullet["life"] <= 0:
-            enemy_bullets.remove(bullet)
+            bullet["remove"](bullet)
         elif math.hypot(bullet["x"] - ship["x"], bullet["y"] - ship["y"]) < ship["radius"]:
             enemy_bullets.remove(bullet)
             lives -= 1
@@ -355,6 +365,14 @@ while running:
         for _ in range(asteroid_count):
             spawn_asteroid(ASTEROID_SIZES[0])
 
+    # Update timers
+    if shoot_cooldown > 0:
+        shoot_cooldown -= 1
+    if shot_reset_timer > 0:
+        shot_reset_timer -= 1
+    else:
+        shot_count = 0
+
     # Update particles
     for particle in particles[:]:
         particle["x"] += particle["dx"]
@@ -406,9 +424,14 @@ while running:
     score_text = font.render(f"Score: {score}", True, WHITE)
     lives_text = font.render(f"Lives: {lives}", True, WHITE)
     level_text = font.render(f"Level: {level}", True, WHITE)
+    shots_text = font.render(f"Shots: {3 - shot_count}", True, WHITE)
     screen.blit(score_text, (10, 10))
     screen.blit(lives_text, (10, 40))
     screen.blit(level_text, (10, 70))
+    screen.blit(shots_text, (10, 100))
+    if shoot_cooldown > 0:
+        cooldown_text = font.render("Cool-down!", True, RED)
+        screen.blit(cooldown_text, (10, 130))
 
     pygame.display.flip()
     clock.tick(60)
