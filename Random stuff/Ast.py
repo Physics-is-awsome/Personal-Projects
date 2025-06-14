@@ -53,14 +53,14 @@ keys = set()
 SHIP_SPEED = 0.2
 ROTATION_SPEED = 5
 BULLET_SPEED = 7
-ASTEROID_COUNT = 4  # Start with fewer asteroids, increase per level
+ASTEROID_COUNT = 4
 ASTEROID_SPEED = 2
 ASTEROID_SIZES = [40, 20, 10]
 FRICTION = 0.99
-UFO_SPAWN_MIN = 600  # 10s at 60 FPS
-UFO_SPAWN_MAX = 1200  # 20s at 60 FPS
+UFO_SPAWN_MIN = 600
+UFO_SPAWN_MAX = 1200
 UFO_BULLET_SPEED = 5
-UFO_SHOOT_INTERVAL = 120  # 2s at 60 FPS
+UFO_SHOOT_INTERVAL = 120
 
 # Game state
 score = 0
@@ -87,14 +87,15 @@ def save_high_score():
 
 # Spawn asteroids
 def spawn_asteroid(size, x=None, y=None):
+    num_vertices = random.randint(6, 12)
     asteroid = {
         "x": x or random.randint(0, WIDTH),
         "y": y or random.randint(0, HEIGHT),
         "dx": (random.random() - 0.5) * ASTEROID_SPEED * (1 + (level - 1) * 0.1),
         "dy": (random.random() - 0.5) * ASTEROID_SPEED * (1 + (level - 1) * 0.1),
         "radius": size,
-        "vertices": random.randint(6, 12),
-        "offsets": [random.uniform(0.8, 1.2) for _ in range(random.randint(6, 12))]
+        "vertices": num_vertices,
+        "offsets": [random.uniform(0.8, 1.2) for _ in range(num_vertices)]
     }
     if math.hypot(asteroid["x"] - ship["x"], asteroid["y"] - ship["y"]) < asteroid["radius"] + ship["radius"] + 50:
         asteroid["x"] = random.randint(0, WIDTH)
@@ -300,7 +301,7 @@ while running:
             if ufo["shoot_timer"] <= 0:
                 angle = math.atan2(ship["y"] - ufo["y"], ship["x"] - ufo["x"])
                 if ufo["type"] == "small":
-                    angle += random.uniform(-0.2, 0.2)  # Less accurate for small UFO
+                    angle += random.uniform(-0.2, 0.2)
                 enemy_bullets.append({
                     "x": ufo["x"],
                     "y": ufo["y"],
