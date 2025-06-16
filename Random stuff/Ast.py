@@ -327,6 +327,10 @@ while running:
                     current_mode = "newtonian_gravity"
                     game_state = "playing"
                     reset_game()
+                elif event.key == pygame.K_5:
+                    current_mode = "dark_matter"
+                    game_state = "playing"
+                    reset_game()
             elif game_state == "game_over" and event.key == pygame.K_r:
                 game_state = "playing"
                 reset_game()
