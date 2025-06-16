@@ -75,7 +75,7 @@ GAME_MODES = {
         "shot_limit": 3,
         "shot_cooldown": 30,
         "time_limit": None,
-        "newtonian_gravity": False
+        "newtonian_gravity": False,
         "dark_matter": False
     },
     "survival": {
@@ -89,7 +89,7 @@ GAME_MODES = {
         "shot_limit": None,
         "shot_cooldown": 0,
         "time_limit": None,
-        "newtonian_gravity": False
+        "newtonian_gravity": False,
         "dark_matter": False
     },
     "time_attack": {
@@ -103,7 +103,7 @@ GAME_MODES = {
         "shot_limit": 5,
         "shot_cooldown": 18,
         "time_limit": 3600,
-        "newtonian_gravity": False
+        "newtonian_gravity": False,
         "dark_matter": False
     },
     "newtonian_gravity": {
@@ -117,7 +117,7 @@ GAME_MODES = {
         "shot_limit": 3,
         "shot_cooldown": 30,
         "time_limit": None,
-        "newtonian_gravity": True
+        "newtonian_gravity": True,
         "dark_matter": False
     },
     "dark_matter": {
@@ -131,7 +131,7 @@ GAME_MODES = {
         "shot_limit": 3,
         "shot_cooldown": 30,
         "time_limit": None,
-        "newtonian_gravity": True
+        "newtonian_gravity": True,
         "dark_matter": True
     }
 }
