@@ -58,9 +58,10 @@ ASTEROID_SIZES = [40, 20, 10]
 FRICTION = 0.99
 UFO_BULLET_SPEED = 5
 UFO_SHOOT_INTERVAL = 120
-GRAVITY_CONSTANT = 0.5
+GRAVITY_CONSTANT = 0.1
 MIN_DISTANCE = 10
-BREAKUP_SPEED = 1.1  # Speed at which smaller asteroids move apart
+BREAKUP_SPEED = 3
+SPEED_OF_LIGHT = 20  # Game-defined speed of light (pixels/frame)
 
 # Game modes
 GAME_MODES = {
@@ -76,7 +77,8 @@ GAME_MODES = {
         "shot_cooldown": 30,
         "time_limit": None,
         "newtonian_gravity": False,
-        "dark_matter": False
+        "dark_matter": False,
+        "relativistic": False
     },
     "survival": {
         "name": "Survival Mode",
@@ -90,7 +92,8 @@ GAME_MODES = {
         "shot_cooldown": 0,
         "time_limit": None,
         "newtonian_gravity": False,
-        "dark_matter": False
+        "dark_matter": False,
+        "relativistic": False
     },
     "time_attack": {
         "name": "Time Attack Mode",
@@ -104,7 +107,8 @@ GAME_MODES = {
         "shot_cooldown": 18,
         "time_limit": 3600,
         "newtonian_gravity": False,
-        "dark_matter": False
+        "dark_matter": False,
+        "relativistic": False
     },
     "newtonian_gravity": {
         "name": "Newtonian Gravity Mode",
@@ -118,7 +122,8 @@ GAME_MODES = {
         "shot_cooldown": 30,
         "time_limit": None,
         "newtonian_gravity": True,
-        "dark_matter": False
+        "dark_matter": False,
+        "relativistic": False
     },
     "dark_matter": {
         "name": "Dark Matter Mode",
@@ -131,8 +136,24 @@ GAME_MODES = {
         "shot_limit": 3,
         "shot_cooldown": 30,
         "time_limit": None,
-        "newtonian_gravity": True,  # Enable object-object gravity
-        "dark_matter": True
+        "newtonian_gravity": True,
+        "dark_matter": True,
+        "relativistic": False
+    },
+    "relativistic": {
+        "name": "Relativistic Mode",
+        "initial_asteroids": 5,
+        "asteroids_per_wave": lambda level: 5 + level - 1,
+        "ufo_spawn_min": 600,
+        "ufo_spawn_max": 1200,
+        "lives": 3,
+        "score_multiplier": 1.5,
+        "shot_limit": 3,
+        "shot_cooldown": 30,
+        "time_limit": None,
+        "newtonian_gravity": False,
+        "dark_matter": False,
+        "relativistic": True
     }
 }
 current_mode = "classic"
@@ -282,6 +303,23 @@ def apply_gravity():
         obj["dx"] += acc["ax"]
         obj["dy"] += acc["ay"]
 
+# Apply relativistic effects
+def apply_relativistic_effects(obj, update=True):
+    if not GAME_MODES[current_mode].get("relativistic", False):
+        return True
+    speed = math.hypot(obj["dx"], obj["dy"])
+    if speed > 0.5 * SPEED_OF_LIGHT:
+        scale = 0.5 * SPEED_OF_LIGHT / speed
+        obj["dx"] *= scale
+        obj["dy"] *= scale
+        speed = 0.5 * SPEED_OF_LIGHT
+    gamma = 1 / math.sqrt(1 - (speed**2 / SPEED_OF_LIGHT**2)) if speed < SPEED_OF_LIGHT else 10
+    if update and random.random() > 1 / gamma:
+        return False
+    obj["contraction"] = 1 / gamma
+    obj["motion_angle"] = math.atan2(obj["dy"], obj["dx"]) if speed > 0 else 0
+    return True
+
 # Initialize asteroids
 for _ in range(GAME_MODES[current_mode]["initial_asteroids"]):
     spawn_asteroid(ASTEROID_SIZES[0])
@@ -315,6 +353,10 @@ while running:
                     current_mode = "dark_matter"
                     game_state = "playing"
                     reset_game()
+                elif event.key == pygame.K_6:
+                    current_mode = "relativistic"
+                    game_state = "playing"
+                    reset_game()
             elif game_state == "game_over" and event.key == pygame.K_r:
                 game_state = "playing"
                 reset_game()
@@ -327,7 +369,7 @@ while running:
     if game_state == "menu":
         screen.fill(BLACK)
         title_text = font.render("Asteroids", True, WHITE)
-        start_text = font.render("Press 1: Classic, 2: Survival, 3: Time Attack, 4: Newtonian Gravity, 5: Dark Matter", True, WHITE)
+        start_text = font.render("Press 1: Classic, 2: Survival, 3: Time Attack, 4: Newtonian Gravity, 5: Dark Matter, 6: Relativistic", True, WHITE)
         instructions = font.render("Left/Right: Rotate, Up: Thrust, Space: Shoot", True, WHITE)
         screen.blit(title_text, (WIDTH // 2 - 50, HEIGHT // 2 - 50))
         screen.blit(start_text, (WIDTH // 2 - 200, HEIGHT // 2))
@@ -349,23 +391,24 @@ while running:
     apply_gravity()
 
     # Update ship
-    if pygame.K_LEFT in keys:
-        ship["angle"] += ROTATION_SPEED
-    if pygame.K_RIGHT in keys:
-        ship["angle"] -= ROTATION_SPEED
-    ship["thrusting"] = pygame.K_UP in keys
-    if ship["thrusting"]:
-        ship["dx"] += math.cos(math.radians(ship["angle"])) * SHIP_SPEED
-        ship["dy"] -= math.sin(math.radians(ship["angle"])) * SHIP_SPEED
-        for _ in range(2):
-            angle = math.radians(ship["angle"] + 180 + random.uniform(-20, 20))
-            particles.append({
-                "x": ship["x"] + math.cos(math.radians(ship["angle"] + 180)) * ship["radius"],
-                "y": ship["y"] - math.sin(math.radians(ship["angle"] + 180)) * ship["radius"],
-                "dx": math.cos(angle) * 3 + ship["dx"],
-                "dy": -math.sin(angle) * 3 + ship["dy"],
-                "life": 15
-            })
+    if apply_relativistic_effects(ship):
+        if pygame.K_LEFT in keys:
+            ship["angle"] += ROTATION_SPEED
+        if pygame.K_RIGHT in keys:
+            ship["angle"] -= ROTATION_SPEED
+        ship["thrusting"] = pygame.K_UP in keys
+        if ship["thrusting"]:
+            ship["dx"] += math.cos(math.radians(ship["angle"])) * SHIP_SPEED
+            ship["dy"] -= math.sin(math.radians(ship["angle"])) * SHIP_SPEED
+            for _ in range(2):
+                angle = math.radians(ship["angle"] + 180 + random.uniform(-20, 20))
+                particles.append({
+                    "x": ship["x"] + math.cos(math.radians(ship["angle"] + 180)) * ship["radius"],
+                    "y": ship["y"] - math.sin(math.radians(ship["angle"] + 180)) * ship["radius"],
+                    "dx": math.cos(angle) * 3 + ship["dx"],
+                    "dy": -math.sin(angle) * 3 + ship["dy"],
+                    "life": 15
+                })
     ship["x"] += ship["dx"]
     ship["y"] += ship["dy"]
     ship["dx"] *= FRICTION
@@ -420,61 +463,59 @@ while running:
 
     # Update asteroids
     for asteroid in asteroids[:]:
-        asteroid["x"] += asteroid["dx"]
-        asteroid["y"] += asteroid["dy"]
-        asteroid["x"] %= WIDTH
-        asteroid["y"] %= HEIGHT
-        for bullet in bullets[:]:
-            if math.hypot(bullet["x"] - asteroid["x"], bullet["y"] - asteroid["y"]) < asteroid["radius"]:
-                bullets.remove(bullet)
-                score += 100 * (ASTEROID_SIZES.index(asteroid["radius"]) + 1) * GAME_MODES[current_mode]["score_multiplier"]
-                if explosion_sound:
-                    explosion_sound.play()
-                for _ in range(10):
-                    particles.append({
-                        "x": asteroid["x"],
-                        "y": asteroid["y"],
-                        "dx": (random.random() - 0.5) * 5,
-                        "dy": (random.random() - 0.5) * 5,
-                        "life": 30
-                    })
-                if asteroid["radius"] > ASTEROID_SIZES[2]:
-                    new_size = ASTEROID_SIZES[ASTEROID_SIZES.index(asteroid["radius"]) + 1]
-                    angle = random.random() * 2 * math.pi
-                    dx1 = math.cos(angle) * BREAKUP_SPEED
-                    dy1 = math.sin(angle) * BREAKUP_SPEED
-                    dx2 = -dx1
-                    dy2 = -dy1
-                    spawn_asteroid(new_size, asteroid["x"], asteroid["y"])
-                    asteroids[-1]["dx"] += dx1
-                    asteroids[-1]["dy"] += dy1
-                    spawn_asteroid(new_size, asteroid["x"], asteroid["y"])
-                    asteroids[-1]["dx"] += dx2
-                    asteroids[-1]["dy"] += dy2
-                asteroids.remove(asteroid)
-                break
-        if math.hypot(ship["x"] - asteroid["x"], ship["y"] - asteroid["y"]) < ship["radius"] + asteroid["radius"]:
-            lives -= 1
-            ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
-            ship["dx"], ship["dy"] = 0, 0
-            if lives <= 0 and current_mode != "time_attack":
-                game_state = "game_over"
+        if apply_relativistic_effects(asteroid):
+            asteroid["x"] += asteroid["dx"]
+            asteroid["y"] += asteroid["dy"]
+            asteroid["x"] %= WIDTH
+            asteroid["y"] %= HEIGHT
+            for bullet in bullets[:]:
+                if math.hypot(bullet["x"] - asteroid["x"], bullet["y"] - asteroid["y"]) < asteroid["radius"]:
+                    bullets.remove(bullet)
+                    score += 100 * (ASTEROID_SIZES.index(asteroid["radius"]) + 1) * GAME_MODES[current_mode]["score_multiplier"]
+                    if explosion_sound:
+                        explosion_sound.play()
+                    for _ in range(10):
+                        particles.append({
+                            "x": asteroid["x"],
+                            "y": asteroid["y"],
+                            "dx": (random.random() - 0.5) * 5,
+                            "dy": (random.random() - 0.5) * 5,
+                            "life": 30
+                        })
+                    if asteroid["radius"] > ASTEROID_SIZES[2]:
+                        new_size = ASTEROID_SIZES[ASTEROID_SIZES.index(asteroid["radius"]) + 1]
+                        angle = random.random() * 2 * math.pi
+                        dx1 = math.cos(angle) * BREAKUP_SPEED
+                        dy1 = math.sin(angle) * BREAKUP_SPEED
+                        dx2 = -dx1
+                        dy2 = -dy1
+                        spawn_asteroid(new_size, asteroid["x"], asteroid["y"])
+                        asteroids[-1]["dx"] += dx1
+                        asteroids[-1]["dy"] += dy1
+                        spawn_asteroid(new_size, asteroid["x"], asteroid["y"])
+                        asteroids[-1]["dx"] += dx2
+                        asteroids[-1]["dy"] += dy2
+                    asteroids.remove(asteroid)
+                    break
+            if math.hypot(ship["x"] - asteroid["x"], ship["y"] - asteroid["y"]) < ship["radius"] + asteroid["radius"]:
+                lives -= 1
+                ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
+                ship["dx"], ship["dy"] = 0, 0
+                if lives <= 0 and current_mode != "time_attack":
+                    game_state = "game_over"
+        else:
+            asteroid["x"] %= WIDTH
+            asteroid["y"] %= HEIGHT
 
     # Update UFO
     if ufo is not None:
-        ufo["x"] += ufo["dx"]
-        ufo["y"] += ufo["dy"]
-        ufo["change_direction_timer"] -= 1
-        if ufo["change_direction_timer"] <= 0:
-            ufo["dy"] = (random.random() - 0.5) * 2
-            ufo["change_direction_timer"] = random.randint(30, 90)
-        if ufo["x"] < -ufo["radius"] or ufo["x"] > WIDTH + ufo["radius"]:
-            ufo = None
-            if ufo_hum_small:
-                ufo_hum_small.stop()
-            if ufo_hum_large:
-                ufo_hum_large.stop()
-        else:
+        if apply_relativistic_effects(ufo):
+            ufo["x"] += ufo["dx"]
+            ufo["y"] += ufo["dy"]
+            ufo["change_direction_timer"] -= 1
+            if ufo["change_direction_timer"] <= 0:
+                ufo["dy"] = (random.random() - 0.5) * 2
+                ufo["change_direction_timer"] = random.randint(30, 90)
             ufo["shoot_timer"] -= 1
             if ufo["shoot_timer"] <= 0:
                 angle = math.atan2(ship["y"] - ufo["y"], ship["x"] - ufo["x"])
@@ -519,6 +560,12 @@ while running:
                     ufo_hum_large.stop()
                 if lives <= 0 and current_mode != "time_attack":
                     game_state = "game_over"
+        if ufo is not None and (ufo["x"] < -ufo["radius"] or ufo["x"] > WIDTH + ufo["radius"]):
+            ufo = None
+            if ufo_hum_small:
+                ufo_hum_small.stop()
+            if ufo_hum_large:
+                ufo_hum_large.stop()
 
     # Spawn UFO
     ufo_spawn_timer -= 1
@@ -562,10 +609,21 @@ while running:
 
     # Draw
     screen.fill(BLACK)
+    contraction = ship.get("contraction", 1)
+    motion_angle = ship.get("motion_angle", 0)
     ship_points = [
-        (ship["x"] + math.cos(math.radians(ship["angle"])) * ship["radius"], ship["y"] - math.sin(math.radians(ship["angle"])) * ship["radius"]),
-        (ship["x"] + math.cos(math.radians(ship["angle"] + 140)) * ship["radius"], ship["y"] - math.sin(math.radians(ship["angle"] + 140)) * ship["radius"]),
-        (ship["x"] + math.cos(math.radians(ship["angle"] - 140)) * ship["radius"], ship["y"] - math.sin(math.radians(ship["angle"] - 140)) * ship["radius"])
+        (
+            ship["x"] + (math.cos(math.radians(ship["angle"])) * ship["radius"] * contraction * math.cos(motion_angle)**2 + math.sin(math.radians(ship["angle"])) * ship["radius"] * math.sin(motion_angle)**2),
+            ship["y"] - (math.sin(math.radians(ship["angle"])) * ship["radius"] * contraction * math.cos(motion_angle)**2 + math.cos(math.radians(ship["angle"])) * ship["radius"] * math.sin(motion_angle)**2)
+        ),
+        (
+            ship["x"] + (math.cos(math.radians(ship["angle"] + 140)) * ship["radius"] * contraction * math.cos(motion_angle)**2 + math.sin(math.radians(ship["angle"] + 140)) * ship["radius"] * math.sin(motion_angle)**2),
+            ship["y"] - (math.sin(math.radians(ship["angle"] + 140)) * ship["radius"] * contraction * math.cos(motion_angle)**2 + math.cos(math.radians(ship["angle"] + 140)) * ship["radius"] * math.sin(motion_angle)**2)
+        ),
+        (
+            ship["x"] + (math.cos(math.radians(ship["angle"] - 140)) * ship["radius"] * contraction * math.cos(motion_angle)**2 + math.sin(math.radians(ship["angle"] - 140)) * ship["radius"] * math.sin(motion_angle)**2),
+            ship["y"] - (math.sin(math.radians(ship["angle"] - 140)) * ship["radius"] * contraction * math.cos(motion_angle)**2 + math.cos(math.radians(ship["angle"] - 140)) * ship["radius"] * math.sin(motion_angle)**2)
+        )
     ]
     pygame.draw.polygon(screen, WHITE, ship_points, 1)
 
@@ -576,26 +634,60 @@ while running:
         pygame.draw.circle(screen, GREEN, (int(bullet["x"]), int(bullet["y"])), 2)
 
     for asteroid in asteroids:
+        contraction = asteroid.get("contraction", 1)
+        motion_angle = asteroid.get("motion_angle", 0)
         points = []
         for i in range(asteroid["vertices"]):
             angle = i * 2 * math.pi / asteroid["vertices"]
             radius = asteroid["radius"] * asteroid["offsets"][i]
-            x = asteroid["x"] + math.cos(angle) * radius
-            y = asteroid["y"] + math.sin(angle) * radius
+            x = asteroid["x"] + (math.cos(angle) * radius * contraction * math.cos(motion_angle)**2 + math.sin(angle) * radius * math.sin(motion_angle)**2)
+            y = asteroid["y"] + (math.sin(angle) * radius * contraction * math.cos(motion_angle)**2 - math.cos(angle) * radius * math.sin(motion_angle)**2)
             points.append((x, y))
         pygame.draw.polygon(screen, WHITE, points, 1)
 
     if ufo is not None:
+        contraction = ufo.get("contraction", 1)
+        motion_angle = ufo.get("motion_angle", 0)
         scale = 1.5 if ufo["type"] == "large" else 1
         ufo_points = [
-            (ufo["x"] - ufo["radius"] * scale, ufo["y"] + ufo["radius"] * scale),
-            (ufo["x"] + ufo["radius"] * scale, ufo["y"] + ufo["radius"] * scale),
-            (ufo["x"] + ufo["radius"] * 1.5 * scale, ufo["y"]),
-            (ufo["x"] + ufo["radius"] * scale, ufo["y"] - ufo["radius"] * scale),
-            (ufo["x"] - ufo["radius"] * scale, ufo["y"] - ufo["radius"] * scale),
-            (ufo["x"] - ufo["radius"] * 1.5 * scale, ufo["y"])
+            (
+                ufo["x"] + (-ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 + ufo["radius"] * scale * math.sin(motion_angle)**2),
+                ufo["y"] + (ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 + ufo["radius"] * scale * math.sin(motion_angle)**2)
+            ),
+            (
+                ufo["x"] + (ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 + ufo["radius"] * scale * math.sin(motion_angle)**2),
+                ufo["y"] + (ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 - ufo["radius"] * scale * math.sin(motion_angle)**2)
+            ),
+            (
+                ufo["x"] + (ufo["radius"] * 1.5 * scale * contraction * math.cos(motion_angle)**2),
+                ufo["y"] + (-ufo["radius"] * 1.5 * scale * math.sin(motion_angle)**2)
+            ),
+            (
+                ufo["x"] + (ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 - ufo["radius"] * scale * math.sin(motion_angle)**2),
+                ufo["y"] + (-ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 - ufo["radius"] * scale * math.sin(motion_angle)**2)
+            ),
+            (
+                ufo["x"] + (-ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 - ufo["radius"] * scale * math.sin(motion_angle)**2),
+                ufo["y"] + (-ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 + ufo["radius"] * scale * math.sin(motion_angle)**2)
+            ),
+            (
+                ufo["x"] + (-ufo["radius"] * 1.5 * scale * contraction * math.cos(motion_angle)**2),
+                ufo["y"] + (ufo["radius"] * 1.5 * scale * math.sin(motion_angle)**2)
+            )
         ]
         pygame.draw.polygon(screen, WHITE, ufo_points, 1)
+
+    # Draw relativistic trails
+    if GAME_MODES[current_mode].get("relativistic", False):
+        for obj in [ship] + asteroids + ([ufo] if ufo is not None else []):
+            speed = math.hypot(obj["dx"], obj["dy"])
+            if speed > 0.3 * SPEED_OF_LIGHT:
+                alpha = int(100 * (speed / (0.5 * SPEED_OF_LIGHT)))
+                surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+                pygame.draw.line(surface, (255, 255, 255, alpha),
+                                (obj["x"], obj["y"]),
+                                (obj["x"] - obj["dx"] * 5, obj["y"] - obj["dy"] * 5), 2)
+                screen.blit(surface, (0, 0))
 
     for particle in particles:
         pygame.draw.circle(screen, WHITE, (int(particle["x"]), int(particle["y"])), 2)
