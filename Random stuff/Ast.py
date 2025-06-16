@@ -57,9 +57,9 @@ ASTEROID_SIZES = [40, 20, 10]
 FRICTION = 0.99
 UFO_BULLET_SPEED = 5
 UFO_SHOOT_INTERVAL = 120
-GRAVITY_CONSTANT = 0.1
+GRAVITY_CONSTANT = 0.5
 MIN_DISTANCE = 10
-BREAKUP_SPEED = 3  # Speed at which smaller asteroids move apart
+BREAKUP_SPEED = 1.5  # Speed at which smaller asteroids move apart
 
 # Game modes
 GAME_MODES = {
