@@ -389,8 +389,8 @@ while running:
                     particles.append({
                         "x": asteroid["x"],
                         "y": asteroid["y"],
-                        "dx": (random.random() - 0.5) * 5,
-                        "dy": (random.random() - 0.5) * 5,
+                        "dx": (random.random() - 0.5) * 10,
+                        "dy": (random.random() - 0.5) * 10,
                         "life": 30
                     })
                 if asteroid["radius"] > ASTEROID_SIZES[2]:
