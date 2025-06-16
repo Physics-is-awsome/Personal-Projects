@@ -697,7 +697,7 @@ while running:
                 pygame.draw.circle(surface, (255, 255, 255, 50), (int(cloud["x"]), int(cloud["y"])), cloud["radius"])
                 screen.blit(surface, (0, 0))
 
-    score_text = font.render(f"Score: {score}", True, (WHITE)
+    score_text = font.render(f"Score: {score}", True, (WHITE))
     lives_text = font.render(f"Lives: {int(lives) if lives != float('inf') else '-'}", True, WHITE)
     level_text = font.render(f"Level: {level}", True, WHITE)
     mode_text = font.render(GAME_MODES[current_mode]["name"], True, WHITE)
