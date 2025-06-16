@@ -339,7 +339,7 @@ while running:
     if game_state == "menu":
         screen.fill(BLACK)
         title_text = font.render("Asteroids", True, WHITE)
-        start_text = font.render("Press 1: Classic, 2: Survival, 3: Time Attack, 4: Newtonian Gravity", True, WHITE)
+        start_text = font.render("Press 1: Classic, 2: Survival, 3: Time Attack, 4: Newtonian Gravity 5: Dark Matter", True, WHITE)
         instructions = font.render("Left/Right: Rotate, Up: Thrust, Space: Shoot", True, WHITE)
         screen.blit(title_text, (WIDTH // 2 - 50, HEIGHT // 2 - 50))
         screen.blit(start_text, (WIDTH // 2 - 200, HEIGHT // 2))
