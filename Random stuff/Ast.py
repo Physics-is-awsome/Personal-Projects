@@ -16,6 +16,7 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 ORANGE = (255, 165, 0)
 GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
 
 # Load sounds (comment out if files are missing)
 try:
@@ -47,6 +48,7 @@ enemy_bullets = []
 particles = []
 ufo = None
 dark_matter_clouds = []
+black_holes = []
 keys = set()
 
 # Game settings
@@ -58,9 +60,9 @@ ASTEROID_SIZES = [40, 20, 10]
 FRICTION = 0.99
 UFO_BULLET_SPEED = 5
 UFO_SHOOT_INTERVAL = 120
-GRAVITY_CONSTANT = 0.6
+GRAVITY_CONSTANT = 0.1
 MIN_DISTANCE = 10
-BREAKUP_SPEED = 1
+BREAKUP_SPEED = 3
 SPEED_OF_LIGHT = 20  # Game-defined speed of light (pixels/frame)
 
 # Game modes
@@ -187,7 +189,7 @@ def save_high_score():
 
 # Reset game
 def reset_game():
-    global ship, asteroids, bullets, enemy_bullets, particles, ufo, score, lives, level, ufo_spawn_timer, shot_count, shoot_cooldown, shot_reset_timer, timer
+    global ship, asteroids, bullets, enemy_bullets, particles, ufo, score, lives, level, ufo_spawn_timer, shot_count, shoot_cooldown, shot_reset_timer, timer, black_holes
     ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
     ship["dx"], ship["dy"] = 0, 0
     ship["angle"] = 0
@@ -196,6 +198,7 @@ def reset_game():
     enemy_bullets.clear()
     particles.clear()
     ufo = None
+    black_holes.clear()
     score = 0
     lives = GAME_MODES[current_mode]["lives"]
     level = 1
@@ -207,6 +210,8 @@ def reset_game():
     for _ in range(GAME_MODES[current_mode]["initial_asteroids"]):
         spawn_asteroid(ASTEROID_SIZES[0])
     spawn_dark_matter_clouds()
+    if GAME_MODES[current_mode].get("relativistic", False):
+        spawn_black_holes()
 
 # Spawn asteroids
 def spawn_asteroid(size, x=None, y=None):
@@ -224,6 +229,10 @@ def spawn_asteroid(size, x=None, y=None):
     if math.hypot(asteroid["x"] - ship["x"], asteroid["y"] - ship["y"]) < asteroid["radius"] + ship["radius"] + 50:
         asteroid["x"] = random.randint(0, WIDTH)
         asteroid["y"] = random.randint(0, HEIGHT)
+    for bh in black_holes:
+        if math.hypot(asteroid["x"] - bh["x"], asteroid["y"] - bh["y"]) < bh["accretion_radius"] + asteroid["radius"]:
+            asteroid["x"] = random.randint(0, WIDTH)
+            asteroid["y"] = random.randint(0, HEIGHT)
     asteroids.append(asteroid)
 
 # Spawn UFO
@@ -247,6 +256,10 @@ def spawn_ufo():
         "change_direction_timer": random.randint(30, 90),
         "mass": 8 if ufo_type == "small" else 15
     }
+    for bh in black_holes:
+        if math.hypot(ufo["x"] - bh["x"], ufo["y"] - bh["y"]) < bh["accretion_radius"] + ufo["radius"]:
+            ufo["x"] = 0 if side == 1 else WIDTH
+            ufo["y"] = random.randint(100, HEIGHT - 100)
     if ufo["type"] == "small" and ufo_hum_small:
         ufo_hum_small.play(-1)
     elif ufo_hum_large:
@@ -270,13 +283,37 @@ def spawn_dark_matter_clouds():
         if math.hypot(cloud["x"] - ship["x"], cloud["y"] - ship["y"]) < cloud["radius"] + ship["radius"] + 50:
             cloud["x"] = random.randint(100, WIDTH - 100)
             cloud["y"] = random.randint(100, HEIGHT - 100)
+        for bh in black_holes:
+            if math.hypot(cloud["x"] - bh["x"], cloud["y"] - bh["y"]) < bh["accretion_radius"] + cloud["radius"]:
+                cloud["x"] = random.randint(100, WIDTH - 100)
+                cloud["y"] = random.randint(100, HEIGHT - 100)
         dark_matter_clouds.append(cloud)
+
+# Spawn black holes
+def spawn_black_holes():
+    global black_holes
+    black_holes.clear()
+    num_black_holes = random.randint(1, 2)
+    for _ in range(num_black_holes):
+        bh = {
+            "x": random.randint(100, WIDTH - 100),
+            "y": random.randint(100, HEIGHT - 100),
+            "mass": 100,
+            "radius": 10,  # Event horizon
+            "accretion_radius": 50,  # Accretion disk
+            "dx": (random.random() - 0.5) * 0.5,
+            "dy": (random.random() - 0.5) * 0.5
+        }
+        if math.hypot(bh["x"] - ship["x"], bh["y"] - ship["y"]) < bh["accretion_radius"] + ship["radius"] + 100:
+            bh["x"] = random.randint(100, WIDTH - 100)
+            bh["y"] = random.randint(100, HEIGHT - 100)
+        black_holes.append(bh)
 
 # Apply gravity
 def apply_gravity():
-    if not (GAME_MODES[current_mode]["newtonian_gravity"] or GAME_MODES[current_mode].get("dark_matter", False)):
+    if not (GAME_MODES[current_mode]["newtonian_gravity"] or GAME_MODES[current_mode].get("dark_matter", False) or GAME_MODES[current_mode].get("relativistic", False)):
         return
-    massive_objects = [ship] + asteroids + ([ufo] if ufo is not None else []) + (dark_matter_clouds if GAME_MODES[current_mode].get("dark_matter", False) else [])
+    massive_objects = [ship] + asteroids + ([ufo] if ufo is not None else []) + (dark_matter_clouds if GAME_MODES[current_mode].get("dark_matter", False) else []) + black_holes
     accelerations = [{"ax": 0, "ay": 0} for _ in massive_objects]
     for i, obj1 in enumerate(massive_objects):
         for j, obj2 in enumerate(massive_objects):
@@ -297,6 +334,8 @@ def apply_gravity():
                 r = MIN_DISTANCE
             if r > 0:
                 force = GRAVITY_CONSTANT * obj1["mass"] * obj2["mass"] / (r * r)
+                if "radius" in obj2 and obj2 in black_holes:
+                    force *= 5  # Stronger gravity for black holes
                 accelerations[i]["ax"] += force * dx / (r * obj1["mass"])
                 accelerations[i]["ay"] += force * dy / (r * obj1["mass"])
     for obj, acc in zip(massive_objects, accelerations):
@@ -316,8 +355,20 @@ def apply_relativistic_effects(obj, update=True):
     gamma = 1 / math.sqrt(1 - (speed**2 / SPEED_OF_LIGHT**2)) if speed < SPEED_OF_LIGHT else 10
     if update and random.random() > 1 / gamma:
         return False
-    obj["contraction"] = 1 / gamma
+    obj["contraction"] = max(0.8, 1 / gamma) if obj is ship else 1 / gamma
     obj["motion_angle"] = math.atan2(obj["dy"], obj["dx"]) if speed > 0 else 0
+    # Doppler shift and headlight effect
+    rel_vx = obj["dx"] - ship["dx"]
+    rel_vy = obj["dy"] - ship["dy"]
+    rel_speed = math.hypot(rel_vx, rel_vy)
+    if rel_speed > 0:
+        cos_theta = (rel_vx * (ship["x"] - obj["x"]) + rel_vy * (ship["y"] - obj["y"])) / (rel_speed * math.hypot(ship["x"] - obj["x"], ship["y"] - obj["y"]))
+        doppler_factor = rel_speed / SPEED_OF_LIGHT * cos_theta  # Simplified
+        obj["doppler"] = doppler_factor
+        obj["brightness"] = min(255, 255 * (1 + gamma / 2)) if cos_theta > 0 else 255
+    else:
+        obj["doppler"] = 0
+        obj["brightness"] = 255
     return True
 
 # Initialize asteroids
@@ -418,14 +469,32 @@ while running:
     ship["x"] %= WIDTH
     ship["y"] %= HEIGHT
 
+    # Check black hole collision
+    for bh in black_holes[:]:
+        if math.hypot(ship["x"] - bh["x"], ship["y"] - bh["y"]) < bh["radius"] + ship["radius"]:
+            lives -= 1
+            ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
+            ship["dx"], ship["dy"] = 0, 0
+            if lives <= 0 and current_mode != "time_attack":
+                game_state = "game_over"
+
     # Shoot
     if pygame.K_SPACE in keys and not space_pressed and shoot_cooldown <= 0:
         if GAME_MODES[current_mode]["shot_limit"] is None or shot_count < GAME_MODES[current_mode]["shot_limit"]:
+            # Apply aberration to bullet direction
+            bullet_angle = math.radians(ship["angle"])
+            ship_speed = math.hypot(ship["dx"], ship["dy"])
+            if ship_speed > 0 and GAME_MODES[current_mode].get("relativistic", False):
+                ship_vx = ship["dx"] / ship_speed
+                ship_vy = ship["dy"] / ship_speed
+                aberration = ship_speed / SPEED_OF_LIGHT
+                cos_theta = math.cos(bullet_angle) * ship_vx + math.sin(bullet_angle) * ship_vy
+                bullet_angle += math.asin(aberration * cos_theta)
             bullets.append({
-                "x": ship["x"] + math.cos(math.radians(ship["angle"])) * ship["radius"],
-                "y": ship["y"] - math.sin(math.radians(ship["angle"])) * ship["radius"],
-                "dx": math.cos(math.radians(ship["angle"])) * BULLET_SPEED + ship["dx"],
-                "dy": -math.sin(math.radians(ship["angle"])) * BULLET_SPEED + ship["dy"],
+                "x": ship["x"] + math.cos(bullet_angle) * ship["radius"],
+                "y": ship["y"] - math.sin(bullet_angle) * ship["radius"],
+                "dx": math.cos(bullet_angle) * BULLET_SPEED + ship["dx"],
+                "dy": -math.sin(bullet_angle) * BULLET_SPEED + ship["dy"],
                 "life": 60
             })
             if shoot_sound:
@@ -506,6 +575,10 @@ while running:
         else:
             asteroid["x"] %= WIDTH
             asteroid["y"] %= HEIGHT
+        for bh in black_holes:
+            if math.hypot(asteroid["x"] - bh["x"], asteroid["y"] - bh["y"]) < bh["radius"] + asteroid["radius"]:
+                asteroids.remove(asteroid)
+                break
 
     # Update UFO
     if ufo is not None:
@@ -560,6 +633,15 @@ while running:
                     ufo_hum_large.stop()
                 if lives <= 0 and current_mode != "time_attack":
                     game_state = "game_over"
+        if ufo is not None:
+            for bh in black_holes:
+                if math.hypot(ufo["x"] - bh["x"], ufo["y"] - bh["y"]) < bh["radius"] + ufo["radius"]:
+                    ufo = None
+                    if ufo_hum_small:
+                        ufo_hum_small.stop()
+                    if ufo_hum_large:
+                        ufo_hum_large.stop()
+                    break
         if ufo is not None and (ufo["x"] < -ufo["radius"] or ufo["x"] > WIDTH + ufo["radius"]):
             ufo = None
             if ufo_hum_small:
@@ -580,12 +662,21 @@ while running:
         cloud["x"] %= WIDTH
         cloud["y"] %= HEIGHT
 
+    # Update black holes
+    for bh in black_holes:
+        bh["x"] += bh["dx"]
+        bh["y"] += bh["dy"]
+        bh["x"] %= WIDTH
+        bh["y"] %= HEIGHT
+
     # Check for wave progression
     if len(asteroids) == 0:
         level += 1
         asteroid_count = GAME_MODES[current_mode]["asteroids_per_wave"](level)
         for _ in range(asteroid_count):
             spawn_asteroid(ASTEROID_SIZES[0])
+        if GAME_MODES[current_mode].get("relativistic", False):
+            spawn_black_holes()
 
     # Update timers
     if shoot_cooldown > 0:
@@ -609,17 +700,49 @@ while running:
 
     # Draw
     screen.fill(BLACK)
+    # Draw black holes
+    if GAME_MODES[current_mode].get("relativistic", False):
+        for bh in black_holes:
+            # Accretion disk
+            surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            pygame.draw.circle(surface, (255, 165, 0, 50), (int(bh["x"]), int(bh["y"])), bh["accretion_radius"])
+            screen.blit(surface, (0, 0))
+            # Event horizon
+            pygame.draw.circle(screen, BLACK, (int(bh["x"]), int(bh["y"])), bh["radius"])
+
     # Draw ship
+    apply_relativistic_effects(ship, update=False)  # Update visuals without time dilation
+    contraction = ship.get("contraction", 1)
+    motion_angle = ship.get("motion_angle", 0)
+    doppler = ship.get("doppler", 0)
+    brightness = ship.get("brightness", 255)
+    color = (
+        min(255, int(255 * (1 - doppler))),
+        min(255, int(255 * (1 - abs(doppler)))),
+        min(255, int(255 * (1 + doppler)))
+    ) if GAME_MODES[current_mode].get("relativistic", False) else WHITE
     ship_points = [
-        (ship["x"] + math.cos(math.radians(ship["angle"])) * ship["radius"], ship["y"] - math.sin(math.radians(ship["angle"])) * ship["radius"]),
-        (ship["x"] + math.cos(math.radians(ship["angle"] + 140)) * ship["radius"], ship["y"] - math.sin(math.radians(ship["angle"] + 140)) * ship["radius"]),
-        (ship["x"] + math.cos(math.radians(ship["angle"] - 140)) * ship["radius"], ship["y"] - math.sin(math.radians(ship["angle"] - 140)) * ship["radius"])
+        (
+            ship["x"] + (math.cos(math.radians(ship["angle"])) * ship["radius"] * contraction * math.cos(motion_angle)**2 + math.sin(math.radians(ship["angle"])) * ship["radius"] * math.sin(motion_angle)**2),
+            ship["y"] - (math.sin(math.radians(ship["angle"])) * ship["radius"] * contraction * math.cos(motion_angle)**2 - math.cos(math.radians(ship["angle"])) * ship["radius"] * math.sin(motion_angle)**2)
+        ),
+        (
+            ship["x"] + (math.cos(math.radians(ship["angle"] + 140)) * ship["radius"] * contraction * math.cos(motion_angle)**2 + math.sin(math.radians(ship["angle"] + 140)) * ship["radius"] * math.sin(motion_angle)**2),
+            ship["y"] - (math.sin(math.radians(ship["angle"] + 140)) * ship["radius"] * contraction * math.cos(motion_angle)**2 - math.cos(math.radians(ship["angle"] + 140)) * ship["radius"] * math.sin(motion_angle)**2)
+        ),
+        (
+            ship["x"] + (math.cos(math.radians(ship["angle"] - 140)) * ship["radius"] * contraction * math.cos(motion_angle)**2 + math.sin(math.radians(ship["angle"] - 140)) * ship["radius"] * math.sin(motion_angle)**2),
+            ship["y"] - (math.sin(math.radians(ship["angle"] - 140)) * ship["radius"] * contraction * math.cos(motion_angle)**2 - math.cos(math.radians(ship["angle"] - 140)) * ship["radius"] * math.sin(motion_angle)**2)
+        )
     ]
-    pygame.draw.polygon(screen, WHITE, ship_points, 1)
+    pygame.draw.polygon(screen, color, ship_points, 1)
     # Draw nose indicator
-    nose_x = ship["x"] + math.cos(math.radians(ship["angle"])) * ship["radius"]
-    nose_y = ship["y"] - math.sin(math.radians(ship["angle"])) * ship["radius"]
-    pygame.draw.circle(screen, RED, (int(nose_x), int(nose_y)), 3)
+    nose_x = ship["x"] + (math.cos(math.radians(ship["angle"])) * ship["radius"] * contraction * math.cos(motion_angle)**2 + math.sin(math.radians(ship["angle"])) * ship["radius"] * math.sin(motion_angle)**2)
+    nose_y = ship["y"] - (math.sin(math.radians(ship["angle"])) * ship["radius"] * contraction * math.cos(motion_angle)**2 - math.cos(math.radians(ship["angle"])) * ship["radius"] * math.sin(motion_angle)**2)
+    surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    pygame.draw.circle(surface, (255, 0, 0, 100), (int(nose_x), int(nose_y)), 5)
+    pygame.draw.circle(surface, RED, (int(nose_x), int(nose_y)), 3)
+    screen.blit(surface, (0, 0))
 
     for bullet in bullets:
         pygame.draw.circle(screen, RED, (int(bullet["x"]), int(bullet["y"])), 2)
@@ -627,50 +750,122 @@ while running:
     for bullet in enemy_bullets:
         pygame.draw.circle(screen, GREEN, (int(bullet["x"]), int(bullet["y"])), 2)
 
+    # Draw asteroids
     for asteroid in asteroids:
+        apply_relativistic_effects(asteroid, update=False)  # Update visuals
         contraction = asteroid.get("contraction", 1)
         motion_angle = asteroid.get("motion_angle", 0)
+        doppler = asteroid.get("doppler", 0)
+        brightness = asteroid.get("brightness", 255)
+        # Aberration
+        ship_speed = math.hypot(ship["dx"], ship["dy"])
+        dx = asteroid["x"] - ship["x"]
+        dy = asteroid["y"] - ship["y"]
+        if dx > WIDTH / 2:
+            dx -= WIDTH
+        elif dx < -WIDTH / 2:
+            dx += WIDTH
+        if dy > HEIGHT / 2:
+            dy -= HEIGHT
+        elif dy < -HEIGHT / 2:
+            dy += HEIGHT
+        r = math.hypot(dx, dy)
+        if r > 0 and ship_speed > 0 and GAME_MODES[current_mode].get("relativistic", False):
+            theta = math.atan2(dy, dx)
+            ship_vx = ship["dx"] / ship_speed if ship_speed > 0 else 0
+            ship_vy = ship["dy"] / ship_speed if ship_speed > 0 else 0
+            aberration = ship_speed / SPEED_OF_LIGHT
+            cos_theta = math.cos(theta) * ship_vx + math.sin(theta) * ship_vy
+            theta_prime = theta + math.asin(aberration * cos_theta)
+            asteroid_x = ship["x"] + r * math.cos(theta_prime)
+            asteroid_y = ship["y"] + r * math.sin(theta_prime)
+        else:
+            asteroid_x = asteroid["x"]
+            asteroid_y = asteroid["y"]
+        color = (
+            min(255, int(brightness * (1 - doppler))),
+            min(255, int(brightness * (1 - abs(doppler)))),
+            min(255, int(brightness * (1 + doppler)))
+        ) if GAME_MODES[current_mode].get("relativistic", False) else WHITE
         points = []
         for i in range(asteroid["vertices"]):
             angle = i * 2 * math.pi / asteroid["vertices"]
             radius = asteroid["radius"] * asteroid["offsets"][i]
-            x = asteroid["x"] + (math.cos(angle) * radius * contraction * math.cos(motion_angle)**2 + math.sin(angle) * radius * math.sin(motion_angle)**2)
-            y = asteroid["y"] + (math.sin(angle) * radius * contraction * math.cos(motion_angle)**2 - math.cos(angle) * radius * math.sin(motion_angle)**2)
+            x = asteroid_x + (math.cos(angle) * radius * contraction * math.cos(motion_angle)**2 + math.sin(angle) * radius * math.sin(motion_angle)**2)
+            y = asteroid_y + (math.sin(angle) * radius * contraction * math.cos(motion_angle)**2 - math.cos(angle) * radius * math.sin(motion_angle)**2)
             points.append((x, y))
-        pygame.draw.polygon(screen, WHITE, points, 1)
+        pygame.draw.polygon(screen, color, points, 1)
+        # Gravitational lensing
+        if GAME_MODES[current_mode].get("relativistic", False) and math.hypot(asteroid_x - ship["x"], asteroid_y - ship["y"]) < 100 and math.hypot(asteroid["dx"], asteroid["dy"]) > 0.3 * SPEED_OF_LIGHT:
+            surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            pygame.draw.circle(surface, (255, 255, 255, 20), (int(asteroid_x), int(asteroid_y)), asteroid["radius"] + 5)
+            screen.blit(surface, (0, 0))
 
+    # Draw UFO
     if ufo is not None:
+        apply_relativistic_effects(ufo, update=False)
         contraction = ufo.get("contraction", 1)
         motion_angle = ufo.get("motion_angle", 0)
+        doppler = ufo.get("doppler", 0)
+        brightness = ufo.get("brightness", 255)
+        # Aberration
+        dx = ufo["x"] - ship["x"]
+        dy = ufo["y"] - ship["y"]
+        if dx > WIDTH / 2:
+            dx -= WIDTH
+        elif dx < -WIDTH / 2:
+            dx += WIDTH
+        if dy > HEIGHT / 2:
+            dy -= HEIGHT
+        elif dy < -HEIGHT / 2:
+            dy += HEIGHT
+        r = math.hypot(dx, dy)
+        if r > 0 and ship_speed > 0 and GAME_MODES[current_mode].get("relativistic", False):
+            theta = math.atan2(dy, dx)
+            theta_prime = theta + math.asin(aberration * cos_theta)
+            ufo_x = ship["x"] + r * math.cos(theta_prime)
+            ufo_y = ship["y"] + r * math.sin(theta_prime)
+        else:
+            ufo_x = ufo["x"]
+            ufo_y = ufo["y"]
+        color = (
+            min(255, int(brightness * (1 - doppler))),
+            min(255, int(brightness * (1 - abs(doppler)))),
+            min(255, int(brightness * (1 + doppler)))
+        ) if GAME_MODES[current_mode].get("relativistic", False) else WHITE
         scale = 1.5 if ufo["type"] == "large" else 1
         ufo_points = [
             (
-                ufo["x"] + (-ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 + ufo["radius"] * scale * math.sin(motion_angle)**2),
-                ufo["y"] + (ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 + ufo["radius"] * scale * math.sin(motion_angle)**2)
+                ufo_x + (-ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 + ufo["radius"] * scale * math.sin(motion_angle)**2),
+                ufo_y + (ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 + ufo["radius"] * scale * math.sin(motion_angle)**2)
             ),
             (
-                ufo["x"] + (ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 + ufo["radius"] * scale * math.sin(motion_angle)**2),
-                ufo["y"] + (ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 - ufo["radius"] * scale * math.sin(motion_angle)**2)
+                ufo_x + (ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 + ufo["radius"] * scale * math.sin(motion_angle)**2),
+                ufo_y + (ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 - ufo["radius"] * scale * math.sin(motion_angle)**2)
             ),
             (
-                ufo["x"] + (ufo["radius"] * 1.5 * scale * contraction * math.cos(motion_angle)**2),
-                ufo["y"] + (-ufo["radius"] * 1.5 * scale * math.sin(motion_angle)**2)
+                ufo_x + (ufo["radius"] * 1.5 * scale * contraction * math.cos(motion_angle)**2),
+                ufo_y + (-ufo["radius"] * 1.5 * scale * math.sin(motion_angle)**2)
             ),
             (
-                ufo["x"] + (ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 - ufo["radius"] * scale * math.sin(motion_angle)**2),
-                ufo["y"] + (-ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 - ufo["radius"] * scale * math.sin(motion_angle)**2)
+                ufo_x + (ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 - ufo["radius"] * scale * math.sin(motion_angle)**2),
+                ufo_y + (-ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 - ufo["radius"] * scale * math.sin(motion_angle)**2)
             ),
             (
-                ufo["x"] + (-ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 - ufo["radius"] * scale * math.sin(motion_angle)**2),
-                ufo["y"] + (-ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 + ufo["radius"] * scale)
-                if ufo is not None else None
+                ufo_x + (-ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 - ufo["radius"] * scale * math.sin(motion_angle)**2),
+                ufo_y + (-ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 + ufo["radius"] * scale * math.sin(motion_angle)**2)
             ),
             (
-                ufo["x"] + (-ufo["radius"] * 1.5 * scale * contraction * math.cos(motion_angle)**2),
-                ufo["y"] + (ufo["radius"] * 1.5 * scale * math.sin(motion_angle)**2)
+                ufo_x + (-ufo["radius"] * 1.5 * scale * contraction * math.cos(motion_angle)**2),
+                ufo_y + (ufo["radius"] * 1.5 * scale * math.sin(motion_angle)**2)
             )
         ]
-        pygame.draw.polygon(screen, WHITE, ufo_points, 1)
+        pygame.draw.polygon(screen, color, ufo_points, 1)
+        # Gravitational lensing
+        if GAME_MODES[current_mode].get("relativistic", False) and math.hypot(ufo_x - ship["x"], ufo_y - ship["y"]) < 100 and math.hypot(ufo["dx"], ufo["dy"]) > 0.3 * SPEED_OF_LIGHT:
+            surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            pygame.draw.circle(surface, (255, 255, 255, 20), (int(ufo_x), int(ufo_y)), ufo["radius"] + 5)
+            screen.blit(surface, (0, 0))
 
     # Draw relativistic trails
     if GAME_MODES[current_mode].get("relativistic", False):
@@ -679,10 +874,11 @@ while running:
             if speed > 0.3 * SPEED_OF_LIGHT:
                 alpha = int(150 * (speed / (0.5 * SPEED_OF_LIGHT))) if obj is ship else int(100 * (speed / (0.5 * SPEED_OF_LIGHT)))
                 trail_length = 10 if obj is ship else 5
+                color = (0, 0, 255, min(255, alpha)) if obj is ship else (255, 255, 255, min(255, alpha))
                 surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-                pygame.draw.line(surface, (255, 255, 255, min(255, alpha)),
-                    (obj["x"], obj["y"]),
-                    (obj["x"] - obj["dx"] * trail_length, obj["y"] - obj["dy"] * trail_length), 2)
+                pygame.draw.line(surface, color,
+                                (obj["x"], obj["y"]),
+                                (obj["x"] - obj["dx"] * trail_length, obj["y"] - obj["dy"] * trail_length), 2)
                 screen.blit(surface, (0, 0))
 
     for particle in particles:
@@ -697,7 +893,7 @@ while running:
                 pygame.draw.circle(surface, (255, 255, 255, 50), (int(cloud["x"]), int(cloud["y"])), cloud["radius"])
                 screen.blit(surface, (0, 0))
 
-    score_text = font.render(f"Score: {score}", True, (WHITE))
+    score_text = font.render(f"Score: {score}", True, WHITE)
     lives_text = font.render(f"Lives: {int(lives) if lives != float('inf') else '-'}", True, WHITE)
     level_text = font.render(f"Level: {level}", True, WHITE)
     mode_text = font.render(GAME_MODES[current_mode]["name"], True, WHITE)
