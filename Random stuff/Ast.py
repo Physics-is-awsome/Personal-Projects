@@ -24,8 +24,6 @@ try:
     explosion_sound = pygame.mixer.Sound("explosion.wav")
     ufo_hum_small = pygame.mixer.Sound("ufo_hum_small.wav")
     ufo_hum_large = pygame.mixer.Sound("ufo_hum_large.wav")
-    # pygame.mixer.music.load("background_beat.wav")
-    # pygame.mixer.music.play(-1)  # Uncomment to enable background music
 except:
     print("Sound files missing; running without audio")
     shoot_sound = explosion_sound = ufo_hum_small = ufo_hum_large = None
@@ -38,7 +36,8 @@ ship = {
     "dx": 0,
     "dy": 0,
     "radius": 15,
-    "thrusting": False
+    "thrusting": False,
+    "mass": 10
 }
 
 # Game objects
@@ -58,6 +57,8 @@ ASTEROID_SIZES = [40, 20, 10]
 FRICTION = 0.99
 UFO_BULLET_SPEED = 5
 UFO_SHOOT_INTERVAL = 120
+GRAVITY_CONSTANT = 0.1
+MIN_DISTANCE = 10
 
 # Game modes
 GAME_MODES = {
@@ -71,7 +72,8 @@ GAME_MODES = {
         "score_multiplier": 1,
         "shot_limit": 3,
         "shot_cooldown": 30,
-        "time_limit": None
+        "time_limit": None,
+        "newtonian_gravity": False
     },
     "survival": {
         "name": "Survival Mode",
@@ -83,7 +85,8 @@ GAME_MODES = {
         "score_multiplier": 2,
         "shot_limit": None,
         "shot_cooldown": 0,
-        "time_limit": None
+        "time_limit": None,
+        "newtonian_gravity": False
     },
     "time_attack": {
         "name": "Time Attack Mode",
@@ -95,7 +98,21 @@ GAME_MODES = {
         "score_multiplier": 1,
         "shot_limit": 5,
         "shot_cooldown": 18,
-        "time_limit": 3600
+        "time_limit": 3600,
+        "newtonian_gravity": False
+    },
+    "newtonian_gravity": {
+        "name": "Newtonian Gravity Mode",
+        "initial_asteroids": 5,
+        "asteroids_per_wave": lambda level: 5 + level - 1,
+        "ufo_spawn_min": 600,
+        "ufo_spawn_max": 1200,
+        "lives": 3,
+        "score_multiplier": 1,
+        "shot_limit": 3,
+        "shot_cooldown": 30,
+        "time_limit": None,
+        "newtonian_gravity": True
     }
 }
 current_mode = "classic"
@@ -159,7 +176,8 @@ def spawn_asteroid(size, x=None, y=None):
         "dy": (random.random() - 0.5) * ASTEROID_SPEED * (1 + (level - 1) * 0.1),
         "radius": size,
         "vertices": num_vertices,
-        "offsets": [random.uniform(0.8, 1.2) for _ in range(num_vertices)]
+        "offsets": [random.uniform(0.8, 1.2) for _ in range(num_vertices)],
+        "mass": 20 if size == 40 else 10 if size == 20 else 5
     }
     if math.hypot(asteroid["x"] - ship["x"], asteroid["y"] - ship["y"]) < asteroid["radius"] + ship["radius"] + 50:
         asteroid["x"] = random.randint(0, WIDTH)
@@ -184,12 +202,44 @@ def spawn_ufo():
         "shoot_timer": shoot_interval,
         "type": ufo_type,
         "points": points,
-        "change_direction_timer": random.randint(30, 90)
+        "change_direction_timer": random.randint(30, 90),
+        "mass": 8 if ufo_type == "small" else 15
     }
     if ufo["type"] == "small" and ufo_hum_small:
         ufo_hum_small.play(-1)
     elif ufo_hum_large:
         ufo_hum_large.play(-1)
+
+# Apply gravity
+def apply_gravity():
+    if not GAME_MODES[current_mode]["newtonian_gravity"]:
+        return
+    massive_objects = [ship] + asteroids + ([ufo] if ufo is not None else [])
+    for i, obj1 in enumerate(massive_objects):
+        ax, ay = 0, 0
+        for j, obj2 in enumerate(massive_objects):
+            if i == j:
+                continue
+            dx = obj2["x"] - obj1["x"]
+            dy = obj2["y"] - obj1["y"]
+            # Handle screen wrapping
+            if dx > WIDTH / 2:
+                dx -= WIDTH
+            elif dx < -WIDTH / 2:
+                dx += WIDTH
+            if dy > HEIGHT / 2:
+                dy -= HEIGHT
+            elif dy < -HEIGHT / 2:
+                dy += HEIGHT
+            r = math.hypot(dx, dy)
+            if r < MIN_DISTANCE:
+                r = MIN_DISTANCE
+            if r > 0:
+                force = GRAVITY_CONSTANT * obj1["mass"] * obj2["mass"] / (r * r)
+                ax += force * dx / (r * obj1["mass"])
+                ay += force * dy / (r * obj1["mass"])
+        obj1["dx"] += ax
+        obj1["dy"] += ay
 
 # Initialize asteroids
 for _ in range(GAME_MODES[current_mode]["initial_asteroids"]):
@@ -216,6 +266,10 @@ while running:
                     current_mode = "time_attack"
                     game_state = "playing"
                     reset_game()
+                elif event.key == pygame.K_4:
+                    current_mode = "newtonian_gravity"
+                    game_state = "playing"
+                    reset_game()
             elif game_state == "game_over" and event.key == pygame.K_r:
                 game_state = "playing"
                 reset_game()
@@ -228,10 +282,10 @@ while running:
     if game_state == "menu":
         screen.fill(BLACK)
         title_text = font.render("Asteroids", True, WHITE)
-        start_text = font.render("Press 1: Classic, 2: Survival, 3: Time Attack", True, WHITE)
+        start_text = font.render("Press 1: Classic, 2: Survival, 3: Time Attack, 4: Newtonian Gravity", True, WHITE)
         instructions = font.render("Left/Right: Rotate, Up: Thrust, Space: Shoot", True, WHITE)
         screen.blit(title_text, (WIDTH // 2 - 50, HEIGHT // 2 - 50))
-        screen.blit(start_text, (WIDTH // 2 - 150, HEIGHT // 2))
+        screen.blit(start_text, (WIDTH // 2 - 200, HEIGHT // 2))
         screen.blit(instructions, (WIDTH // 2 - 150, HEIGHT // 2 + 50))
         pygame.display.flip()
         continue
@@ -245,6 +299,9 @@ while running:
         screen.blit(restart_text, (WIDTH // 2 - 120, HEIGHT // 2 + 50))
         pygame.display.flip()
         continue
+
+    # Apply gravity
+    apply_gravity()
 
     # Update ship
     if pygame.K_LEFT in keys:
