@@ -131,7 +131,7 @@ GAME_MODES = {
         "shot_limit": 3,
         "shot_cooldown": 30,
         "time_limit": None,
-        "newtonian_gravity": False,
+        "newtonian_gravity": True,
         "dark_matter": True
     }
 }
@@ -255,51 +255,36 @@ def spawn_dark_matter_clouds():
 def apply_gravity():
     if not (GAME_MODES[current_mode]["newtonian_gravity"] or GAME_MODES[current_mode].get("dark_matter", False)):
         return
-    massive_objects = [ship] + asteroids + ([ufo] if ufo is not None else [])
-    for obj1 in massive_objects:
-        ax, ay = 0, 0
-        if GAME_MODES[current_mode]["newtonian_gravity"]:
-            for obj2 in massive_objects:
-                if obj1 is obj2:
-                    continue
-                dx = obj2["x"] - obj1["x"]
-                dy = obj2["y"] - obj1["y"]
-                if dx > WIDTH / 2:
-                    dx -= WIDTH
-                elif dx < -WIDTH / 2:
-                    dx += WIDTH
-                if dy > HEIGHT / 2:
-                    dy -= HEIGHT
-                elif dy < -HEIGHT / 2:
-                    dy += HEIGHT
-                r = math.hypot(dx, dy)
-                if r < MIN_DISTANCE:
-                    r = MIN_DISTANCE
-                if r > 0:
-                    force = GRAVITY_CONSTANT * obj1["mass"] * obj2["mass"] / (r * r)
-                    ax += force * dx / (r * obj1["mass"])
-                    ay += force * dy / (r * obj1["mass"])
-        if GAME_MODES[current_mode].get("dark_matter", False):
-            for cloud in dark_matter_clouds:
-                dx = cloud["x"] - obj1["x"]
-                dy = cloud["y"] - obj1["y"]
-                if dx > WIDTH / 2:
-                    dx -= WIDTH
-                elif dx < -WIDTH / 2:
-                    dx += WIDTH
-                if dy > HEIGHT / 2:
-                    dy -= HEIGHT
-                elif dy < -HEIGHT / 2:
-                    dy += HEIGHT
-                r = math.hypot(dx, dy)
-                if r < MIN_DISTANCE:
-                    r = MIN_DISTANCE
-                if r > 0:
-                    force = GRAVITY_CONSTANT * obj1["mass"] * cloud["mass"] / (r * r)
-                    ax += force * dx / (r * obj1["mass"])
-                    ay += force * dy / (r * obj1["mass"])
-        obj1["dx"] += ax
-        obj1["dy"] += ay
+    # All massive objects, including clouds in Dark Matter Mode
+    massive_objects = [ship] + asteroids + ([ufo] if ufo is not None else []) + (dark_matter_clouds if GAME_MODES[current_mode].get("dark_matter", False) else [])
+    # Accumulate accelerations for each object
+    accelerations = [{"ax": 0, "ay": 0} for _ in massive_objects]
+    for i, obj1 in enumerate(massive_objects):
+        for j, obj2 in enumerate(massive_objects):
+            if i == j:
+                continue
+            dx = obj2["x"] - obj1["x"]
+            dy = obj2["y"] - obj1["y"]
+            # Handle screen wrapping
+            if dx > WIDTH / 2:
+                dx -= WIDTH
+            elif dx < -WIDTH / 2:
+                dx += WIDTH
+            if dy > HEIGHT / 2:
+                dy -= HEIGHT
+            elif dy < -HEIGHT / 2:
+                dy += HEIGHT
+            r = math.hypot(dx, dy)
+            if r < MIN_DISTANCE:
+                r = MIN_DISTANCE
+            if r > 0:
+                force = GRAVITY_CONSTANT * obj1["mass"] * obj2["mass"] / (r * r)
+                accelerations[i]["ax"] += force * dx / (r * obj1["mass"])
+                accelerations[i]["ay"] += force * dy / (r * obj1["mass"])
+    # Apply accelerations
+    for obj, acc in zip(massive_objects, accelerations):
+        obj["dx"] += acc["ax"]
+        obj["dy"] += acc["ay"]
 
 # Initialize asteroids
 for _ in range(GAME_MODES[current_mode]["initial_asteroids"]):
