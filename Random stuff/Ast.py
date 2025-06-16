@@ -215,7 +215,7 @@ def spawn_Dark_Matter():
         Dark_Matter.append({
             "x": random.randint(100, WIDTH - 100),
             "y": random.randint(100, HEIGHT - 100),
-            "mass": 50,
+            "mass": 500,
             "radius": 100
     })
 
