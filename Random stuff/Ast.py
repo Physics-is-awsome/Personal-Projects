@@ -5,7 +5,7 @@ import json
 
 # Initialize Pygame
 pygame.init()
-WIDTH, HEIGHT = 800, 600
+WIDTH, HEIGHT = 900, 700
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Asteroids")
 clock = pygame.time.Clock()
@@ -217,7 +217,7 @@ def spawn_Dark_Matter():
             "y": random.randint(100, HEIGHT - 100),
             "mass": 50,
             "radius": 100
-    }
+    })
 
 
 # Spawn UFO
