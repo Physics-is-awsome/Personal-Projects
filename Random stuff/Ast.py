@@ -5,7 +5,7 @@ import json
 
 # Initialize Pygame
 pygame.init()
-WIDTH, HEIGHT = 900, 700
+WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Asteroids")
 clock = pygame.time.Clock()
@@ -43,10 +43,10 @@ ship = {
 # Game objects
 bullets = []
 asteroids = []
-Dark_Matter = []
 enemy_bullets = []
 particles = []
 ufo = None
+dark_matter_clouds = []
 keys = set()
 
 # Game settings
@@ -58,9 +58,9 @@ ASTEROID_SIZES = [40, 20, 10]
 FRICTION = 0.99
 UFO_BULLET_SPEED = 5
 UFO_SHOOT_INTERVAL = 120
-GRAVITY_CONSTANT = 0.5
+GRAVITY_CONSTANT = 0.1
 MIN_DISTANCE = 10
-BREAKUP_SPEED = 1.5  # Speed at which smaller asteroids move apart
+BREAKUP_SPEED = 3  # Speed at which smaller asteroids move apart
 
 # Game modes
 GAME_MODES = {
@@ -122,16 +122,16 @@ GAME_MODES = {
     },
     "dark_matter": {
         "name": "Dark Matter Mode",
-        "initial_asteroids": 5,
-        "asteroids_per_wave": lambda level: 5 + level - 1,
-        "ufo_spawn_min": 600,
-        "ufo_spawn_max": 1200,
-        "lives": 3,
-        "score_multiplier": 1,
+        "initial_asteroids": 6,
+        "asteroids_per_wave": lambda level: 6 + level - 1,
+        "ufo_spawn_min": 720,
+        "ufo_spawn_max": 1080,
+        "lives": 2,
+        "score_multiplier": 1.5,
         "shot_limit": 3,
         "shot_cooldown": 30,
         "time_limit": None,
-        "newtonian_gravity": True,
+        "newtonian_gravity": False,
         "dark_matter": True
     }
 }
@@ -166,12 +166,11 @@ def save_high_score():
 
 # Reset game
 def reset_game():
-    global ship, asteroids, bullets, enemy_bullets, particles, ufo, score, lives, level, ufo_spawn_timer, shot_count, shoot_cooldown, shot_reset_timer, timer, Dark_Matter
+    global ship, asteroids, bullets, enemy_bullets, particles, ufo, score, lives, level, ufo_spawn_timer, shot_count, shoot_cooldown, shot_reset_timer, timer
     ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
     ship["dx"], ship["dy"] = 0, 0
     ship["angle"] = 0
     asteroids.clear()
-    Dark_Matter.clear()
     bullets.clear()
     enemy_bullets.clear()
     particles.clear()
@@ -186,6 +185,7 @@ def reset_game():
     timer = GAME_MODES[current_mode]["time_limit"]
     for _ in range(GAME_MODES[current_mode]["initial_asteroids"]):
         spawn_asteroid(ASTEROID_SIZES[0])
+    spawn_dark_matter_clouds()
 
 # Spawn asteroids
 def spawn_asteroid(size, x=None, y=None):
@@ -204,21 +204,6 @@ def spawn_asteroid(size, x=None, y=None):
         asteroid["x"] = random.randint(0, WIDTH)
         asteroid["y"] = random.randint(0, HEIGHT)
     asteroids.append(asteroid)
-
-# Spawn dark matter
-def spawn_Dark_Matter():
-    global Dark_Matter
-    Dark_Matter.clear()
-    if not GAME_MODES[current_mode].get("dark_matter", False):
-        return
-    for _ in range(random.randint(3, 5)):
-        Dark_Matter.append({
-            "x": random.randint(100, WIDTH - 100),
-            "y": random.randint(100, HEIGHT - 100),
-            "mass": 500,
-            "radius": 100
-    })
-
 
 # Spawn UFO
 def spawn_ufo():
@@ -246,6 +231,26 @@ def spawn_ufo():
     elif ufo_hum_large:
         ufo_hum_large.play(-1)
 
+# Spawn dark matter clouds
+def spawn_dark_matter_clouds():
+    global dark_matter_clouds
+    dark_matter_clouds.clear()
+    if not GAME_MODES[current_mode].get("dark_matter", False):
+        return
+    for _ in range(random.randint(3, 5)):
+        cloud = {
+            "x": random.randint(100, WIDTH - 100),
+            "y": random.randint(100, HEIGHT - 100),
+            "mass": 50,
+            "radius": 100,
+            "dx": (random.random() - 0.5) * 3,
+            "dy": (random.random() - 0.5) * 3
+        }
+        if math.hypot(cloud["x"] - ship["x"], cloud["y"] - ship["y"]) < cloud["radius"] + ship["radius"] + 50:
+            cloud["x"] = random.randint(100, WIDTH - 100)
+            cloud["y"] = random.randint(100, HEIGHT - 100)
+        dark_matter_clouds.append(cloud)
+
 # Apply gravity
 def apply_gravity():
     if not (GAME_MODES[current_mode]["newtonian_gravity"] or GAME_MODES[current_mode].get("dark_matter", False)):
@@ -253,7 +258,6 @@ def apply_gravity():
     massive_objects = [ship] + asteroids + ([ufo] if ufo is not None else [])
     for obj1 in massive_objects:
         ax, ay = 0, 0
-        # Object-object gravity
         if GAME_MODES[current_mode]["newtonian_gravity"]:
             for obj2 in massive_objects:
                 if obj1 is obj2:
@@ -275,9 +279,8 @@ def apply_gravity():
                     force = GRAVITY_CONSTANT * obj1["mass"] * obj2["mass"] / (r * r)
                     ax += force * dx / (r * obj1["mass"])
                     ay += force * dy / (r * obj1["mass"])
-        # Dark matter gravity
         if GAME_MODES[current_mode].get("dark_matter", False):
-            for cloud in Dark_Matter:
+            for cloud in dark_matter_clouds:
                 dx = cloud["x"] - obj1["x"]
                 dy = cloud["y"] - obj1["y"]
                 if dx > WIDTH / 2:
@@ -343,7 +346,7 @@ while running:
     if game_state == "menu":
         screen.fill(BLACK)
         title_text = font.render("Asteroids", True, WHITE)
-        start_text = font.render("Press 1: Classic, 2: Survival, 3: Time Attack, 4: Newtonian Gravity 5: Dark Matter", True, WHITE)
+        start_text = font.render("Press 1: Classic, 2: Survival, 3: Time Attack, 4: Newtonian Gravity, 5: Dark Matter", True, WHITE)
         instructions = font.render("Left/Right: Rotate, Up: Thrust, Space: Shoot", True, WHITE)
         screen.blit(title_text, (WIDTH // 2 - 50, HEIGHT // 2 - 50))
         screen.blit(start_text, (WIDTH // 2 - 200, HEIGHT // 2))
@@ -456,17 +459,14 @@ while running:
                     })
                 if asteroid["radius"] > ASTEROID_SIZES[2]:
                     new_size = ASTEROID_SIZES[ASTEROID_SIZES.index(asteroid["radius"]) + 1]
-                    # Random angle for separation
                     angle = random.random() * 2 * math.pi
                     dx1 = math.cos(angle) * BREAKUP_SPEED
                     dy1 = math.sin(angle) * BREAKUP_SPEED
                     dx2 = -dx1
                     dy2 = -dy1
-                    # Spawn first new asteroid
                     spawn_asteroid(new_size, asteroid["x"], asteroid["y"])
                     asteroids[-1]["dx"] += dx1
                     asteroids[-1]["dy"] += dy1
-                    # Spawn second new asteroid
                     spawn_asteroid(new_size, asteroid["x"], asteroid["y"])
                     asteroids[-1]["dx"] += dx2
                     asteroids[-1]["dy"] += dy2
@@ -538,18 +538,19 @@ while running:
                     ufo_hum_large.stop()
                 if lives <= 0 and current_mode != "time_attack":
                     game_state = "game_over"
-    # Update dark matter clouds
-    for cloud in Dark_Matter:
-        cloud["x"] += cloud["dx"]
-        cloud["y"] += cloud["dy"]
-        cloud["x"] %= WIDTH
-        cloud["y"] %= HEIGHT
 
     # Spawn UFO
     ufo_spawn_timer -= 1
     if ufo_spawn_timer <= 0 and ufo is None:
         spawn_ufo()
         ufo_spawn_timer = random.randint(GAME_MODES[current_mode]["ufo_spawn_min"], GAME_MODES[current_mode]["ufo_spawn_max"])
+
+    # Update dark matter clouds
+    for cloud in dark_matter_clouds:
+        cloud["x"] += cloud["dx"]
+        cloud["y"] += cloud["dy"]
+        cloud["x"] %= WIDTH
+        cloud["y"] %= HEIGHT
 
     # Check for wave progression
     if len(asteroids) == 0:
@@ -617,6 +618,15 @@ while running:
 
     for particle in particles:
         pygame.draw.circle(screen, WHITE, (int(particle["x"]), int(particle["y"])), 2)
+
+    # Draw dark matter clouds
+    if GAME_MODES[current_mode].get("dark_matter", False):
+        for cloud in dark_matter_clouds:
+            visible = any(math.hypot(particle["x"] - cloud["x"], particle["y"] - cloud["y"]) < cloud["radius"] for particle in particles)
+            if visible:
+                surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+                pygame.draw.circle(surface, (255, 255, 255, 50), (int(cloud["x"]), int(cloud["y"])), cloud["radius"])
+                screen.blit(surface, (0, 0))
 
     score_text = font.render(f"Score: {score}", True, WHITE)
     lives_text = font.render(f"Lives: {int(lives) if lives != float('inf') else '-'}", True, WHITE)
