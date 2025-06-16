@@ -694,7 +694,7 @@ while running:
             visible = any(math.hypot(particle["x"] - cloud["x"], particle["y"] - cloud["y"]) < cloud["radius"] for particle in particles)
             if visible:
                 surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-                pygame.draw.circle(surface, (255,255,255, 255, 50), (int(cloud["x"]), int(cloud["y"]), cloud["radius"])
+                pygame.draw.circle(surface, (255, 255, 255, 50), (int(cloud["x"]), int(cloud["y"])), cloud["radius"])
                 screen.blit(surface, (0, 0))
 
     score_text = font.render(f"Score: {score}", True, (WHITE)
