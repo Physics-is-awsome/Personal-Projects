@@ -538,6 +538,12 @@ while running:
                     ufo_hum_large.stop()
                 if lives <= 0 and current_mode != "time_attack":
                     game_state = "game_over"
+    # Update dark matter clouds
+    for cloud in Dark_Matter:
+        cloud["x"] += cloud["dx"]
+        cloud["y"] += cloud["dy"]
+        cloud["x"] %= WIDTH
+        cloud["y"] %= HEIGHT
 
     # Spawn UFO
     ufo_spawn_timer -= 1
