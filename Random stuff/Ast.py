@@ -737,8 +737,8 @@ while running:
     ]
     pygame.draw.polygon(screen, color, ship_points, 1)
     # Draw nose indicator
-    nose_x = ship["x"] + (math.cos(math.radians(ship["angle"])) * ship["radius"] * contraction * math.cos(motion_angle)**2 + math.sin(math.radians(ship["angle"])) * ship["radius"] * math.sin(motion_angle)**2)
-    nose_y = ship["y"] - (math.sin(math.radians(ship["angle"])) * ship["radius"] * contraction * math.cos(motion_angle)**2 - math.cos(math.radians(ship["angle"])) * ship["radius"] * math.sin(motion_angle)**2)
+    nose_x = ship["x"] + math.cos(math.radians(ship["angle"])) * ship["radius"]
+    nose_y = ship["y"] - math.sin(math.radians(ship["angle"])) * ship["radius"]
     surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
     pygame.draw.circle(surface, (255, 0, 0, 100), (int(nose_x), int(nose_y)), 5)
     pygame.draw.circle(surface, RED, (int(nose_x), int(nose_y)), 3)
