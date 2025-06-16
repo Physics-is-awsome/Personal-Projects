@@ -43,6 +43,7 @@ ship = {
 # Game objects
 bullets = []
 asteroids = []
+Dark_Matter = []
 enemy_bullets = []
 particles = []
 ufo = None
@@ -75,6 +76,7 @@ GAME_MODES = {
         "shot_cooldown": 30,
         "time_limit": None,
         "newtonian_gravity": False
+        "dark_matter": False
     },
     "survival": {
         "name": "Survival Mode",
@@ -88,6 +90,7 @@ GAME_MODES = {
         "shot_cooldown": 0,
         "time_limit": None,
         "newtonian_gravity": False
+        "dark_matter": False
     },
     "time_attack": {
         "name": "Time Attack Mode",
@@ -101,6 +104,7 @@ GAME_MODES = {
         "shot_cooldown": 18,
         "time_limit": 3600,
         "newtonian_gravity": False
+        "dark_matter": False
     },
     "newtonian_gravity": {
         "name": "Newtonian Gravity Mode",
@@ -114,6 +118,21 @@ GAME_MODES = {
         "shot_cooldown": 30,
         "time_limit": None,
         "newtonian_gravity": True
+        "dark_matter": False
+    },
+    "dark_matter": {
+        "name": "Dark Matter Mode",
+        "initial_asteroids": 5,
+        "asteroids_per_wave": lambda level: 5 + level - 1,
+        "ufo_spawn_min": 600,
+        "ufo_spawn_max": 1200,
+        "lives": 3,
+        "score_multiplier": 1,
+        "shot_limit": 3,
+        "shot_cooldown": 30,
+        "time_limit": None,
+        "newtonian_gravity": True
+        "dark_matter": True
     }
 }
 current_mode = "classic"
@@ -147,11 +166,12 @@ def save_high_score():
 
 # Reset game
 def reset_game():
-    global ship, asteroids, bullets, enemy_bullets, particles, ufo, score, lives, level, ufo_spawn_timer, shot_count, shoot_cooldown, shot_reset_timer, timer
+    global ship, asteroids, bullets, enemy_bullets, particles, ufo, score, lives, level, ufo_spawn_timer, shot_count, shoot_cooldown, shot_reset_timer, timer, Dark_Matter
     ship["x"], ship["y"] = WIDTH / 2, HEIGHT / 2
     ship["dx"], ship["dy"] = 0, 0
     ship["angle"] = 0
     asteroids.clear()
+    Dark_Matter.clear()
     bullets.clear()
     enemy_bullets.clear()
     particles.clear()
@@ -185,6 +205,21 @@ def spawn_asteroid(size, x=None, y=None):
         asteroid["y"] = random.randint(0, HEIGHT)
     asteroids.append(asteroid)
 
+# Spawn dark matter
+def spawn_Dark_Matter():
+    global Dark_Matter
+    Dark_Matter.clear()
+    if not GAME_MODES[current_mode].get("dark_matter", False):
+        return
+    for _ in range(random.randint(3, 5)):
+        Dark_Matter.append({
+            "x": random.randint(100, WIDTH - 100),
+            "y": random.randint(100, HEIGHT - 100),
+            "mass": 50,
+            "radius": 100
+    }
+
+
 # Spawn UFO
 def spawn_ufo():
     global ufo
@@ -213,32 +248,53 @@ def spawn_ufo():
 
 # Apply gravity
 def apply_gravity():
-    if not GAME_MODES[current_mode]["newtonian_gravity"]:
+    if not (GAME_MODES[current_mode]["newtonian_gravity"] or GAME_MODES[current_mode].get("dark_matter", False)):
         return
     massive_objects = [ship] + asteroids + ([ufo] if ufo is not None else [])
-    for i, obj1 in enumerate(massive_objects):
+    for obj1 in massive_objects:
         ax, ay = 0, 0
-        for j, obj2 in enumerate(massive_objects):
-            if i == j:
-                continue
-            dx = obj2["x"] - obj1["x"]
-            dy = obj2["y"] - obj1["y"]
-            # Handle screen wrapping
-            if dx > WIDTH / 2:
-                dx -= WIDTH
-            elif dx < -WIDTH / 2:
-                dx += WIDTH
-            if dy > HEIGHT / 2:
-                dy -= HEIGHT
-            elif dy < -HEIGHT / 2:
-                dy += HEIGHT
-            r = math.hypot(dx, dy)
-            if r < MIN_DISTANCE:
-                r = MIN_DISTANCE
-            if r > 0:
-                force = GRAVITY_CONSTANT * obj1["mass"] * obj2["mass"] / (r * r)
-                ax += force * dx / (r * obj1["mass"])
-                ay += force * dy / (r * obj1["mass"])
+        # Object-object gravity
+        if GAME_MODES[current_mode]["newtonian_gravity"]:
+            for obj2 in massive_objects:
+                if obj1 is obj2:
+                    continue
+                dx = obj2["x"] - obj1["x"]
+                dy = obj2["y"] - obj1["y"]
+                if dx > WIDTH / 2:
+                    dx -= WIDTH
+                elif dx < -WIDTH / 2:
+                    dx += WIDTH
+                if dy > HEIGHT / 2:
+                    dy -= HEIGHT
+                elif dy < -HEIGHT / 2:
+                    dy += HEIGHT
+                r = math.hypot(dx, dy)
+                if r < MIN_DISTANCE:
+                    r = MIN_DISTANCE
+                if r > 0:
+                    force = GRAVITY_CONSTANT * obj1["mass"] * obj2["mass"] / (r * r)
+                    ax += force * dx / (r * obj1["mass"])
+                    ay += force * dy / (r * obj1["mass"])
+        # Dark matter gravity
+        if GAME_MODES[current_mode].get("dark_matter", False):
+            for cloud in dark_matter_clouds:
+                dx = cloud["x"] - obj1["x"]
+                dy = cloud["y"] - obj1["y"]
+                if dx > WIDTH / 2:
+                    dx -= WIDTH
+                elif dx < -WIDTH / 2:
+                    dx += WIDTH
+                if dy > HEIGHT / 2:
+                    dy -= HEIGHT
+                elif dy < -HEIGHT / 2:
+                    dy += HEIGHT
+                r = math.hypot(dx, dy)
+                if r < MIN_DISTANCE:
+                    r = MIN_DISTANCE
+                if r > 0:
+                    force = GRAVITY_CONSTANT * obj1["mass"] * cloud["mass"] / (r * r)
+                    ax += force * dx / (r * obj1["mass"])
+                    ay += force * dy / (r * obj1["mass"])
         obj1["dx"] += ax
         obj1["dy"] += ay
 
