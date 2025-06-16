@@ -58,9 +58,9 @@ ASTEROID_SIZES = [40, 20, 10]
 FRICTION = 0.99
 UFO_BULLET_SPEED = 5
 UFO_SHOOT_INTERVAL = 120
-GRAVITY_CONSTANT = 0.1
+GRAVITY_CONSTANT = 0.6
 MIN_DISTANCE = 10
-BREAKUP_SPEED = 3
+BREAKUP_SPEED = 1
 SPEED_OF_LIGHT = 20  # Game-defined speed of light (pixels/frame)
 
 # Game modes
@@ -609,23 +609,17 @@ while running:
 
     # Draw
     screen.fill(BLACK)
-    contraction = ship.get("contraction", 1)
-    motion_angle = ship.get("motion_angle", 0)
+    # Draw ship
     ship_points = [
-        (
-            ship["x"] + (math.cos(math.radians(ship["angle"])) * ship["radius"] * contraction * math.cos(motion_angle)**2 + math.sin(math.radians(ship["angle"])) * ship["radius"] * math.sin(motion_angle)**2),
-            ship["y"] - (math.sin(math.radians(ship["angle"])) * ship["radius"] * contraction * math.cos(motion_angle)**2 + math.cos(math.radians(ship["angle"])) * ship["radius"] * math.sin(motion_angle)**2)
-        ),
-        (
-            ship["x"] + (math.cos(math.radians(ship["angle"] + 140)) * ship["radius"] * contraction * math.cos(motion_angle)**2 + math.sin(math.radians(ship["angle"] + 140)) * ship["radius"] * math.sin(motion_angle)**2),
-            ship["y"] - (math.sin(math.radians(ship["angle"] + 140)) * ship["radius"] * contraction * math.cos(motion_angle)**2 + math.cos(math.radians(ship["angle"] + 140)) * ship["radius"] * math.sin(motion_angle)**2)
-        ),
-        (
-            ship["x"] + (math.cos(math.radians(ship["angle"] - 140)) * ship["radius"] * contraction * math.cos(motion_angle)**2 + math.sin(math.radians(ship["angle"] - 140)) * ship["radius"] * math.sin(motion_angle)**2),
-            ship["y"] - (math.sin(math.radians(ship["angle"] - 140)) * ship["radius"] * contraction * math.cos(motion_angle)**2 + math.cos(math.radians(ship["angle"] - 140)) * ship["radius"] * math.sin(motion_angle)**2)
-        )
+        (ship["x"] + math.cos(math.radians(ship["angle"])) * ship["radius"], ship["y"] - math.sin(math.radians(ship["angle"])) * ship["radius"]),
+        (ship["x"] + math.cos(math.radians(ship["angle"] + 140)) * ship["radius"], ship["y"] - math.sin(math.radians(ship["angle"] + 140)) * ship["radius"]),
+        (ship["x"] + math.cos(math.radians(ship["angle"] - 140)) * ship["radius"], ship["y"] - math.sin(math.radians(ship["angle"] - 140)) * ship["radius"])
     ]
     pygame.draw.polygon(screen, WHITE, ship_points, 1)
+    # Draw nose indicator
+    nose_x = ship["x"] + math.cos(math.radians(ship["angle"])) * ship["radius"]
+    nose_y = ship["y"] - math.sin(math.radians(ship["angle"])) * ship["radius"]
+    pygame.draw.circle(screen, RED, (int(nose_x), int(nose_y)), 3)
 
     for bullet in bullets:
         pygame.draw.circle(screen, RED, (int(bullet["x"]), int(bullet["y"])), 2)
@@ -668,7 +662,8 @@ while running:
             ),
             (
                 ufo["x"] + (-ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 - ufo["radius"] * scale * math.sin(motion_angle)**2),
-                ufo["y"] + (-ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 + ufo["radius"] * scale * math.sin(motion_angle)**2)
+                ufo["y"] + (-ufo["radius"] * scale * contraction * math.cos(motion_angle)**2 + ufo["radius"] * scale)
+                if ufo is not None else None
             ),
             (
                 ufo["x"] + (-ufo["radius"] * 1.5 * scale * contraction * math.cos(motion_angle)**2),
@@ -682,26 +677,27 @@ while running:
         for obj in [ship] + asteroids + ([ufo] if ufo is not None else []):
             speed = math.hypot(obj["dx"], obj["dy"])
             if speed > 0.3 * SPEED_OF_LIGHT:
-                alpha = int(100 * (speed / (0.5 * SPEED_OF_LIGHT)))
+                alpha = int(150 * (speed / (0.5 * SPEED_OF_LIGHT))) if obj is ship else int(100 * (speed / (0.5 * SPEED_OF_LIGHT)))
+                trail_length = 10 if obj is ship else 5
                 surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-                pygame.draw.line(surface, (255, 255, 255, alpha),
-                                (obj["x"], obj["y"]),
-                                (obj["x"] - obj["dx"] * 5, obj["y"] - obj["dy"] * 5), 2)
+                pygame.draw.line(surface, (255, 255, 255, min(255, alpha)),
+                    (obj["x"], obj["y"]),
+                    (obj["x"] - obj["dx"] * trail_length, obj["y"] - obj["dy"] * trail_length), 2)
                 screen.blit(surface, (0, 0))
 
     for particle in particles:
         pygame.draw.circle(screen, WHITE, (int(particle["x"]), int(particle["y"])), 2)
 
     # Draw dark matter clouds
-    if GAME_MODES[current_mode].get("dark_matter", False):
+    if GAME_MODES[current_mode].get("dark_matter", False)):
         for cloud in dark_matter_clouds:
             visible = any(math.hypot(particle["x"] - cloud["x"], particle["y"] - cloud["y"]) < cloud["radius"] for particle in particles)
             if visible:
                 surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-                pygame.draw.circle(surface, (255, 255, 255, 50), (int(cloud["x"]), int(cloud["y"])), cloud["radius"])
+                pygame.draw.circle(surface, (255,255,255, 255, 50), (int(cloud["x"]), int(cloud["y"]), cloud["radius"])
                 screen.blit(surface, (0, 0))
 
-    score_text = font.render(f"Score: {score}", True, WHITE)
+    score_text = font.render(f"Score: {score}", True, (WHITE)
     lives_text = font.render(f"Lives: {int(lives) if lives != float('inf') else '-'}", True, WHITE)
     level_text = font.render(f"Level: {level}", True, WHITE)
     mode_text = font.render(GAME_MODES[current_mode]["name"], True, WHITE)
