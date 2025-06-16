@@ -277,7 +277,7 @@ def apply_gravity():
                     ay += force * dy / (r * obj1["mass"])
         # Dark matter gravity
         if GAME_MODES[current_mode].get("dark_matter", False):
-            for cloud in dark_matter_clouds:
+            for cloud in Dark_Matter:
                 dx = cloud["x"] - obj1["x"]
                 dy = cloud["y"] - obj1["y"]
                 if dx > WIDTH / 2:
