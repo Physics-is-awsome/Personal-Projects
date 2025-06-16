@@ -57,8 +57,9 @@ ASTEROID_SIZES = [40, 20, 10]
 FRICTION = 0.99
 UFO_BULLET_SPEED = 5
 UFO_SHOOT_INTERVAL = 120
-GRAVITY_CONSTANT = 0.4
+GRAVITY_CONSTANT = 0.1
 MIN_DISTANCE = 10
+BREAKUP_SPEED = 3  # Speed at which smaller asteroids move apart
 
 # Game modes
 GAME_MODES = {
@@ -389,14 +390,26 @@ while running:
                     particles.append({
                         "x": asteroid["x"],
                         "y": asteroid["y"],
-                        "dx": (random.random() - 0.5) * 20,
-                        "dy": (random.random() - 0.5) * 20,
+                        "dx": (random.random() - 0.5) * 5,
+                        "dy": (random.random() - 0.5) * 5,
                         "life": 30
                     })
                 if asteroid["radius"] > ASTEROID_SIZES[2]:
                     new_size = ASTEROID_SIZES[ASTEROID_SIZES.index(asteroid["radius"]) + 1]
+                    # Random angle for separation
+                    angle = random.random() * 2 * math.pi
+                    dx1 = math.cos(angle) * BREAKUP_SPEED
+                    dy1 = math.sin(angle) * BREAKUP_SPEED
+                    dx2 = -dx1
+                    dy2 = -dy1
+                    # Spawn first new asteroid
                     spawn_asteroid(new_size, asteroid["x"], asteroid["y"])
+                    asteroids[-1]["dx"] += dx1
+                    asteroids[-1]["dy"] += dy1
+                    # Spawn second new asteroid
                     spawn_asteroid(new_size, asteroid["x"], asteroid["y"])
+                    asteroids[-1]["dx"] += dx2
+                    asteroids[-1]["dy"] += dy2
                 asteroids.remove(asteroid)
                 break
         if math.hypot(ship["x"] - asteroid["x"], ship["y"] - asteroid["y"]) < ship["radius"] + asteroid["radius"]:
@@ -537,7 +550,7 @@ while running:
         pygame.draw.polygon(screen, WHITE, ufo_points, 1)
 
     for particle in particles:
-        pygame.draw.circle(screen, WHITE, (int(particle["x"]), int(particle["y"])), 2)
+        pygame.draw.circle(screen, WHITE, (int(particle["x"]), int(bullet["y"])), 2)
 
     score_text = font.render(f"Score: {score}", True, WHITE)
     lives_text = font.render(f"Lives: {int(lives) if lives != float('inf') else '-'}", True, WHITE)
