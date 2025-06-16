@@ -689,7 +689,7 @@ while running:
         pygame.draw.circle(screen, WHITE, (int(particle["x"]), int(particle["y"])), 2)
 
     # Draw dark matter clouds
-    if GAME_MODES[current_mode].get("dark_matter", False)):
+    if GAME_MODES[current_mode].get("dark_matter", False):
         for cloud in dark_matter_clouds:
             visible = any(math.hypot(particle["x"] - cloud["x"], particle["y"] - cloud["y"]) < cloud["radius"] for particle in particles)
             if visible:
