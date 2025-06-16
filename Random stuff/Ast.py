@@ -131,7 +131,7 @@ GAME_MODES = {
         "shot_limit": 3,
         "shot_cooldown": 30,
         "time_limit": None,
-        "newtonian_gravity": True,
+        "newtonian_gravity": True,  # Enable object-object gravity
         "dark_matter": True
     }
 }
@@ -255,9 +255,7 @@ def spawn_dark_matter_clouds():
 def apply_gravity():
     if not (GAME_MODES[current_mode]["newtonian_gravity"] or GAME_MODES[current_mode].get("dark_matter", False)):
         return
-    # All massive objects, including clouds in Dark Matter Mode
     massive_objects = [ship] + asteroids + ([ufo] if ufo is not None else []) + (dark_matter_clouds if GAME_MODES[current_mode].get("dark_matter", False) else [])
-    # Accumulate accelerations for each object
     accelerations = [{"ax": 0, "ay": 0} for _ in massive_objects]
     for i, obj1 in enumerate(massive_objects):
         for j, obj2 in enumerate(massive_objects):
@@ -265,7 +263,6 @@ def apply_gravity():
                 continue
             dx = obj2["x"] - obj1["x"]
             dy = obj2["y"] - obj1["y"]
-            # Handle screen wrapping
             if dx > WIDTH / 2:
                 dx -= WIDTH
             elif dx < -WIDTH / 2:
@@ -281,7 +278,6 @@ def apply_gravity():
                 force = GRAVITY_CONSTANT * obj1["mass"] * obj2["mass"] / (r * r)
                 accelerations[i]["ax"] += force * dx / (r * obj1["mass"])
                 accelerations[i]["ay"] += force * dy / (r * obj1["mass"])
-    # Apply accelerations
     for obj, acc in zip(massive_objects, accelerations):
         obj["dx"] += acc["ax"]
         obj["dy"] += acc["ay"]
