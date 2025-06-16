@@ -550,7 +550,7 @@ while running:
         pygame.draw.polygon(screen, WHITE, ufo_points, 1)
 
     for particle in particles:
-        pygame.draw.circle(screen, WHITE, (int(particle["x"]), int(bullet["y"])), 2)
+        pygame.draw.circle(screen, WHITE, (int(particle["x"]), int(particle["y"])), 2)
 
     score_text = font.render(f"Score: {score}", True, WHITE)
     lives_text = font.render(f"Lives: {int(lives) if lives != float('inf') else '-'}", True, WHITE)
